@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Analyzer — CogniSense CX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/app-layout.css" />
+  <style>
+    /* ─── Page Layout ────────────────────────────────────── */
+    .analyzer-layout {
+      position: relative;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      height: calc(100vh - 8rem);
+      min-height: 600px;
+      display: flex;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .analyzer-list {
+      width: 380px;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.015);
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+    }
+    .analyzer-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      position: relative;
+    }
+
+    /* ─── Ticket List ────────────────────────────────────── */
+    .at-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--glass-border);
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .at-count {
+      background: rgba(124,110,245,0.2);
+      color: var(--accent-purple);
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(124,110,245,0.4);
+    }
+    .tickets-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    .ticket-item {
+      padding: 1.15rem;
+      border-radius: var(--radius);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--glass-border);
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .ticket-item:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(124,110,245,0.4);
+    }
+    .ticket-item.selected {
+      background: rgba(124,110,245,0.1);
+      border-color: var(--accent-purple);
+    }
+    .ticket-meta { display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center; }
+    .ticket-client { font-size: 0.85rem; font-weight: 700; }
+    .ticket-time { font-size: 0.72rem; color: var(--text-muted); }
+    .ticket-preview { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* ─── Main Panel ─────────────────────────────────────── */
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center; padding: 2rem; }
+    .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.5; }
+    
+    .ar-header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.01);
+    }
+    .ar-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .ar-meta { font-size: 0.82rem; color: var(--text-secondary); display: flex; gap: 0.75rem; align-items: center; }
+    
+    .ar-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem;
+    }
+    .ar-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      padding: 1.25rem;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 2rem;
+    }
+
+    /* ─── Scan Button & Results ──────────────────────────── */
+    .scan-action { text-align: center; margin: 3rem 0; }
+    .scan-btn {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 0 20px rgba(124,110,245,0.3);
+    }
+    
+    .scanning-anim { display: none; text-align: center; margin: 3rem 0; }
+    .scan-spinner { font-size: 3rem; animation: spin 2s linear infinite; margin-bottom: 1rem; }
+    .scan-status { font-size: 0.9rem; color: var(--accent-purple); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    .analysis-results { display: none; animation: fadeUp 0.5s ease; }
+    .ml-result-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .ml-card { padding: 1.25rem; background: var(--bg-tertiary); border-radius: var(--radius); border: 1px solid var(--glass-border); text-align: center; }
+    .ml-card .mc-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .ml-card .mc-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .ml-card .mc-val { font-size: 1.1rem; font-weight: 800; margin-top: 0.25rem; }
+    
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="app-main">
+    
+    <div style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="section-tag">🤖 ML Engine</div>
+        <h1 style="font-size:1.6rem; font-weight:900; margin-top:0.25rem;">AI Analyzer Queue</h1>
+        <p style="color:var(--text-secondary); font-size:0.88rem;">Manually trigger AI scans for incoming raw complaints before handling them.</p>
+      </div>
+    </div>
+
+    <div class="analyzer-layout">
+      <!-- Left side: Queue -->
+      <div class="analyzer-list">
+        <div class="at-header">
+          <span>Pending Scan</span>
+          <span class="at-count" id="queueCount">0</span>
+        </div>
+        <div class="tickets-scroll" id="ticketList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Right side: Sandbox / Results -->
+      <div class="analyzer-main" id="analyzerMain">
+        <!-- Default State -->
+        <div class="empty-state" id="defaultState">
+          <div class="empty-icon">👈</div>
+          <h3 style="color:var(--text-primary); margin-bottom:0.5rem;">Select a Complaint</h3>
+          <p>Choose a ticket from the queue to process it through the ML engine for sentiment and priority routing.</p>
+        </div>
+        
+        <!-- Ticket Selected State -->
+        <div id="activeState" style="display:none; height:100%; display:none; flex-direction:column;">
+          <div class="ar-header">
+            <div class="ar-title" id="arTitle">Ticket Title</div>
+            <div class="ar-meta">
+              <span id="arClient">👤 Client Name</span>
+              <span id="arTime">⏱️ Time</span>
+            </div>
+          </div>
+          
+          <div class="ar-body">
+            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); font-weight:700; margin-bottom:0.5rem;">Raw Content Output</div>
+            <div class="ar-text" id="arText">
+              Complaint description goes here...
+            </div>
+
+            <!-- SCAN ACTION -->
+            <div class="scan-action" id="scanActionBox">
+              <button class="btn btn-primary scan-btn" id="runScanBtn">
+                <strong><span style="font-size:1.2rem;margin-right:0.2rem;">⚡</span> Run Deep Scan Engine</strong>
+              </button>
+              <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.75rem;">Requires approx 1-2 seconds of compute time</div>
+            </div>
+
+            <!-- SCAN ANIMATION -->
+            <div class="scanning-anim" id="scanAnimBox">
+              <div class="scan-spinner">⚙️</div>
+              <div class="scan-status" id="scanStatusMsg">Initializing ML Models...</div>
+            </div>
+
+            <!-- RESULTS -->
+            <div class="analysis-results" id="scanResultsBox">
+              <div style="font-size:0.85rem; font-weight:700; color:#10d98a; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+                <span style="font-size:1.2rem;">✅</span> Scan Complete. Intelligence unlocked.
+              </div>
+              
+              <div class="ml-result-grid" id="rgContent">
+                <!-- Rendered dynamically -->
+              </div>
+              
+              <div style="text-align:center; margin-top:2rem; padding-top:2rem; border-top:1px solid var(--glass-border);">
+                <button class="btn btn-primary" id="goChatBtn" style="padding:0.75rem 1.5rem;">
+                  💬 Proceed to Respond →
+                </button>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.75rem;">This ticket is now available in the Messaging Center</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/app.js"></script>
+<script src="js/ml-engine.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/complaint-store.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  if (!requireAuth('admin')) throw new Error('Not authenticated');
+  Layout.render('analyze.html');
+
+  let queue = [];
+  let selectedId = null;
+
+  function loadQueue() {
+    const all = ComplaintStore.getAll();
+    queue = all.filter(c => c.status === 'Pending Analysis');
+    document.getElementById('queueCount').textContent = queue.length;
+
+    const listEl = document.getElementById('ticketList');
+    if (!queue.length) {
+      listEl.innerHTML = `
+        <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+          <div style="font-size:2.5rem; margin-bottom:0.75rem; opacity:0.6;">🎉</div>
+          <div style="font-size:0.9rem; font-weight:700; color:var(--text-secondary); margin-bottom:0.25rem;">Inbox Zero</div>
+          <div style="font-size:0.8rem;">No incoming complaints require AI scanning at the moment.</div>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = queue.map(c => `
+      <div class="ticket-item${c.id === selectedId ? ' selected' : ''}" onclick="selectTicket('${c.id}')">
+        <div class="ticket-meta">
+          <div class="ticket-client">👤 ${escHtml(c.clientName || 'Anonymous')}</div>
+          <div class="ticket-time">${formatTimeAgo(c.timestamp || c.createdAt)}</div>
+        </div>
+        <div class="ticket-preview">${escHtml(c.title)}</div>
+      </div>
+    `).join('');
+  }
+
+  function selectTicket(id) {
+    selectedId = id;
+    loadQueue(); // to update selected class visually
+    
+    const complaint = queue.find(c => c.id === id);
+    if (!complaint) return;
+
+    document.getElementById('defaultState').style.display = 'none';
+    const activeState = document.getElementById('activeState');
+    activeState.style.display = 'flex';
+    
+    // Reset view to Pre-scan
+    document.getElementById('scanActionBox').style.display  = 'block';
+    document.getElementById('scanAnimBox').style.display    = 'none';
+    document.getElementById('scanResultsBox').style.display = 'none';
+
+    // Populate header
+    document.getElementById('arTitle').textContent  = complaint.title;
+    document.getElementById('arClient').innerHTML   = `👤 ${escHtml(complaint.clientName || 'Anonymous')}`;
+    document.getElementById('arTime').innerHTML     = `⏱️ ${new Date(complaint.timestamp).toLocaleString()}`;
+    document.getElementById('arText').textContent   = complaint.text || complaint.description;
+
+    // Attach click handler for scanning
+    document.getElementById('runScanBtn').onclick = () => runScan(complaint);
+    document.getElementById('goChatBtn').onclick = () => { window.location.href = `admin-messaging.html?id=${complaint.id}`; };
+  }
+
+  function runScan(complaint) {
+    document.getElementById('scanActionBox').style.display = 'none';
+    const animBox = document.getElementById('scanAnimBox');
+    animBox.style.display = 'block';
+    const msg = document.getElementById('scanStatusMsg');
+
+    // Fun simulated async pipeline
+    setTimeout(() => msg.textContent = "Tokenizing Text Payload...", 400);
+    setTimeout(() => msg.textContent = "Extracting Sentiment Vectors...", 900);
+    setTimeout(() => msg.textContent = "Applying Classification Models...", 1400);
+    
+    setTimeout(() => {
+      animBox.style.display = 'none';
+      
+      // Perform ACTUAL analysis
+      let r = MLEngine.analyze(complaint.text);
+      if (!r.error) {
+        const updated = ComplaintStore.analyzeComplaint(complaint.id);
+        if (updated) {
+          r = {
+            sentiment: updated.sentiment || r.sentiment,
+            classification: updated.classification || r.classification,
+            priority: updated.priority || r.priority,
+            nlp: r.nlp || {},
+          };
+        }
+      }
+
+      showResults(r);
+      // We don't reload the whole queue right away so the Admin can still see the result.
+      // But we update count
+      document.getElementById('queueCount').textContent = Math.max(0, queue.length - 1);
+
+    }, 2000);
+  }
+
+  function showResults(r) {
+    const rsBox = document.getElementById('scanResultsBox');
+    rsBox.style.display = 'block';
+    
+    const sentColor = { Positive:'#10d98a', Negative:'#f87171', Neutral:'#9197ba' }[r.sentiment?.label] || '#9197ba';
+    const priColor  = { High:'#f87171', Medium:'#fbbf24', Low:'#10d98a' }[r.priority?.level] || '#9197ba';
+
+    document.getElementById('rgContent').innerHTML = `
+      <div class="ml-card">
+        <div class="mc-icon">${r.sentiment?.emoji || '😐'}</div>
+        <div class="mc-label">Sentiment</div>
+        <div class="mc-val" style="color:${sentColor};">${r.sentiment?.label || '–'}</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">${r.sentiment?.confidence || 0}% Match</div>
+      </div>
+      <div class="ml-card">
+        <div class="mc-icon">${r.classification?.icon || '🗂️'}</div>
+        <div class="mc-label">Category</div>
+        <div class="mc-val">${r.classification?.category || '–'}</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">${r.classification?.confidence || 0}% Match</div>
+      </div>
+      <div class="ml-card">
+        <div class="mc-icon">${r.priority?.icon || '🟡'}</div>
+        <div class="mc-label">Priority</div>
+        <div class="mc-val" style="color:${priColor};">${r.priority?.level || '–'}</div>
+      </div>
+      <div class="ml-card">
+        <div class="mc-icon">🎯</div>
+        <div class="mc-label">Net Score</div>
+        <div class="mc-val">${r.priority?.score || 0}/100</div>
+      </div>
+    `;
+    
+    // Add success toast
+    const tc = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.style.cssText = `background:var(--bg-secondary);border:1px solid #10d98a;color:var(--text-primary);padding:0.75rem 1.25rem;border-radius:var(--radius);margin-top:0.5rem;font-size:0.85rem;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:fadeIn 0.3s ease;`;
+    toast.textContent = "AI Analysis applied successfully!";
+    tc.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  }
+
+  // Init
+  loadQueue();
+</script>
+</body>
+</html>

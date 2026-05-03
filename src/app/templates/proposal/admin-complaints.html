@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All Complaints — CogniSense CX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/app-layout.css" />
+  <style>
+    .search-row { display:flex; gap:0.65rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem; }
+    .search-inp { flex:1; min-width:180px; padding:0.55rem 0.9rem; background:var(--bg-tertiary); border:1px solid var(--glass-border); border-radius:var(--radius); color:var(--text-primary); font-size:0.85rem; outline:none; font-family:inherit; transition:var(--transition); }
+    .search-inp:focus { border-color:var(--accent-purple); }
+    .tbl-wrap { overflow-x:auto; border-radius:var(--radius-md); border:1px solid var(--glass-border); }
+    .tbl-count { font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem; }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="app-main">
+    <div class="page-topbar">
+      <div>
+        <div class="section-tag">📋 Admin Portal</div>
+        <h1 style="font-size:1.6rem;font-weight:900;margin-top:0.25rem;">All Complaints</h1>
+      </div>
+      <div style="display:flex;gap:0.6rem;">
+        <button class="btn btn-outline btn-sm" id="refreshBtn">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <input class="search-inp" id="searchInp" placeholder="🔍 Search by title, user, or category…" />
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        <button class="filter-pill active" data-status="all">All</button>
+        <button class="filter-pill" data-status="Pending Analysis">🤖 Needs Scan</button>
+        <button class="filter-pill" data-status="Pending">⏳ Pending</button>
+        <button class="filter-pill" data-status="In Progress">🔧 In Progress</button>
+        <button class="filter-pill" data-status="Resolved">✅ Resolved</button>
+      </div>
+      <div style="display:flex;gap:0.4rem;">
+        <button class="filter-pill" data-pri="all">Any Priority</button>
+        <button class="filter-pill" data-pri="High">🔴 High</button>
+        <button class="filter-pill" data-pri="Medium">🟡 Medium</button>
+      </div>
+    </div>
+    <div class="tbl-count" id="tblCount"></div>
+
+    <div class="tbl-wrap">
+      <table class="data-table" id="mainTable">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Title</th>
+            <th>Sentiment</th>
+            <th>Category</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" style="display:none;" class="empty-state"><div class="e-icon">🔎</div><p>No complaints match your search.</p></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/app.js"></script>
+<script src="js/ml-engine.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/complaint-store.js"></script>
+<script>
+  if (!requireAuth('admin')) throw new Error('Not authenticated');
+  Layout.render('admin-complaints.html');
+
+  let statusFilter = 'all';
+  let priFilter    = 'all';
+  let searchQuery  = '';
+
+  function getFiltered() {
+    let list = ComplaintStore.getAll();
+    if (statusFilter !== 'all') list = list.filter(c => c.status === statusFilter);
+    if (priFilter    !== 'all') list = list.filter(c => c.priority?.level === priFilter);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(c =>
+        c.title?.toLowerCase().includes(q) ||
+        c.userName?.toLowerCase().includes(q) ||
+        (c.classification?.category || c.category || '').toLowerCase().includes(q) ||
+        (c.description || c.text || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }
+
+  function renderTable() {
+    const list = getFiltered();
+    const tbody = document.getElementById('tableBody');
+    const empty = document.getElementById('emptyState');
+    document.getElementById('tblCount').textContent = `Showing ${list.length} complaint${list.length !== 1 ? 's' : ''}`;
+
+    if (!list.length) { document.getElementById('mainTable').style.display = 'none'; empty.style.display = 'block'; return; }
+    document.getElementById('mainTable').style.display = ''; empty.style.display = 'none';
+
+    tbody.innerHTML = list.map(c => {
+      const sentColor = { Positive:'#10d98a', Negative:'#f87171', Neutral:'#9197ba' }[c.sentiment?.label] || '#9197ba';
+      const priColor  = { High:'#f87171', Medium:'#fbbf24', Low:'#10d98a' }[c.priority?.level] || '#9197ba';
+      const stColor   = { Pending:'#fbbf24', 'In Progress':'#4f9eff', Resolved:'#10d98a' }[c.status] || '#9197ba';
+      const msgs = ComplaintStore.getMessages(c.id);
+      return `<tr>
+        <td style="font-weight:700;white-space:nowrap;">${escHtml(c.userName || '—')}</td>
+        <td style="max-width:200px;" title="${escHtml(c.title)}">${escHtml(truncate(c.title || '—', 40))}</td>
+        <td><span class="badge" style="background:${sentColor}15;color:${sentColor};border:1px solid ${sentColor}30;white-space:nowrap;">${c.sentiment?.emoji || ''} ${c.sentiment?.label || '—'}</span></td>
+        <td><span class="chip">${c.classification?.icon || ''} ${c.classification?.category || c.category || '—'}</span></td>
+        <td><span class="badge" style="background:${priColor}15;color:${priColor};border:1px solid ${priColor}30;">${c.priority?.level || '—'}</span></td>
+        <td>
+          ${c.status === 'Pending Analysis' ? 
+            '<span class="badge" style="background:rgba(124,110,245,0.15);color:#a78bfa;border:1px solid rgba(124,110,245,0.3);white-space:nowrap;">🤖 Needs Scan</span>' : `
+            <select class="status-select-inline" data-id="${c.id}" onchange="changeStatus('${c.id}', this.value)">
+              <option ${c.status==='Pending'?'selected':''}>Pending</option>
+              <option ${c.status==='In Progress'?'selected':''}>In Progress</option>
+              <option ${c.status==='Resolved'?'selected':''}>Resolved</option>
+            </select>
+          `}
+        </td>
+        <td style="white-space:nowrap;font-size:0.78rem;color:var(--text-muted);">${formatTimeAgo(c.createdAt || c.timestamp)}</td>
+        <td>
+          <div class="tbl-actions">
+            ${c.status === 'Pending Analysis' ? 
+              '<a href="analyze.html" class="btn btn-outline btn-sm" style="white-space:nowrap; border-color:#a78bfa; color:#a78bfa;">🔍 AI Scan</a>' :
+              `<a href="admin-messaging.html?id=${c.id}" class="btn btn-primary btn-sm" style="white-space:nowrap;">💬 Chat${msgs.length ? ` (${msgs.length})` : ''}</a>`
+            }
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function changeStatus(id, status) {
+    ComplaintStore.updateStatus(id, status);
+    showToast(`Status updated to "${status}"`, 'success');
+    renderTable();
+  }
+
+  // Filter pills
+  document.querySelectorAll('.filter-pill[data-status]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill[data-status]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      statusFilter = btn.dataset.status;
+      renderTable();
+    });
+  });
+  document.querySelectorAll('.filter-pill[data-pri]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill[data-pri]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      priFilter = btn.dataset.pri;
+      renderTable();
+    });
+  });
+
+  document.getElementById('searchInp').addEventListener('input', e => { searchQuery = e.target.value; renderTable(); });
+  document.getElementById('refreshBtn').addEventListener('click', renderTable);
+
+  function showToast(msg, type='info') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    const colors = { success:'#10d98a', error:'#f87171', info:'#4f9eff' };
+    t.style.cssText = `background:var(--bg-secondary);border:1px solid ${colors[type]};color:var(--text-primary);padding:0.75rem 1.25rem;border-radius:var(--radius);margin-top:0.5rem;font-size:0.85rem;box-shadow:0 4px 20px rgba(0,0,0,0.3);`;
+    t.textContent = msg; c.appendChild(t); setTimeout(() => t.remove(), 3000);
+  }
+
+  renderTable();
+</script>
+</body>
+</html>

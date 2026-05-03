@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Encyclopedia - CogniSense CX{% endblock %}
+{% block content %}
+<div class="cx-panel cx-panel-white cx-panel-encyclo-head">
+  <h1 class="cx-panel-title">Issue encyclopedia</h1>
+  <p class="cx-panel-lead">Quick references to support interpretation of model output—not legal advice. Pair with official CFPB materials for compliance work.</p>
+</div>
+<div class="cx-encyclo-grid">
+  {% for issue in issues %}
+    <article class="cx-panel cx-panel-white cx-encyclo-card">
+      <h2 class="cx-encyclo-title">{{ issue.title }}</h2>
+      <h3 class="cx-encyclo-sub">Typical signals</h3>
+      <p class="cx-encyclo-body">{{ issue.signals }}</p>
+      <h3 class="cx-encyclo-sub">Recommended next steps</h3>
+      <p class="cx-encyclo-body">{{ issue.action }}</p>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

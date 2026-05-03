@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Complaints — CogniSense CX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/app-layout.css" />
+</head>
+<body>
+<div class="app-container">
+  <div class="app-main">
+    <div class="page-topbar">
+      <div>
+        <div class="section-tag">📋 Client Portal</div>
+        <h1 style="font-size:1.6rem;font-weight:900;margin-top:0.25rem;">My Complaints</h1>
+      </div>
+      <a href="client-submit.html" class="btn btn-primary btn-sm">+ New Complaint</a>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1rem;margin-bottom:1.75rem;" id="statsRow"></div>
+
+    <!-- Filters -->
+    <div style="display:flex;gap:0.4rem;margin-bottom:1rem;flex-wrap:wrap;" id="statusFilters">
+      <button class="filter-pill active" data-status="all">All</button>
+      <button class="filter-pill" data-status="Pending">Pending</button>
+      <button class="filter-pill" data-status="In Progress">In Progress</button>
+      <button class="filter-pill" data-status="Resolved">Resolved</button>
+    </div>
+
+    <!-- List -->
+    <div id="complaintList"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/app.js"></script>
+<script src="js/ml-engine.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/complaint-store.js"></script>
+<script>
+  if (!requireAuth('client')) throw new Error('Not authenticated');
+  const session = Auth.getSession();
+  Layout.render('client-complaints.html');
+
+  let currentFilter = 'all';
+
+  function renderStats() {
+    const all   = ComplaintStore.getByUser(session.id);
+    if (!all) { showBanner('Could not load your complaints. Retrying…', 'error'); return; }
+    clearBanner();
+    const stats = { All: all.length, Pending: 0, 'In Progress': 0, Resolved: 0 };
+    all.forEach(c => { if (stats[c.status] !== undefined) stats[c.status]++; });
+    const icons  = { All: '📋', Pending: '⏳', 'In Progress': '🔧', Resolved: '✅' };
+    const colors = { All: '#7c6ef5', Pending: '#fbbf24', 'In Progress': '#4f9eff', Resolved: '#10d98a' };
+    document.getElementById('statsRow').innerHTML = Object.entries(stats).map(([k,v]) => `
+      <div class="stat-mini-card">
+        <div class="smc-icon">${icons[k]}</div>
+        <div class="smc-val" style="color:${colors[k]}">${v}</div>
+        <div class="smc-label">${k}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderList() {
+    const all  = ComplaintStore.getByUser(session.id);
+    if (!all) { showBanner('Could not load complaint list. Retrying…', 'error'); return; }
+    clearBanner();
+    const list = currentFilter === 'all' ? all : all.filter(c => c.status === currentFilter);
+    const el   = document.getElementById('complaintList');
+
+    if (!list.length) {
+      el.innerHTML = `<div class="empty-state"><div class="e-icon">${all.length ? '🔎' : '📭'}</div>
+        <p>${all.length ? 'No complaints match this filter.' : 'No complaints yet.'}</p>
+        <a href="client-submit.html" class="btn btn-primary btn-sm" style="margin-top:0.75rem;">Submit your first complaint →</a>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = list.map(c => {
+      const sentColor = { Positive:'#10d98a', Negative:'#f87171', Neutral:'#9197ba' }[c.sentiment?.label] || '#9197ba';
+      const priColor  = { High:'#f87171', Medium:'#fbbf24', Low:'#10d98a' }[c.priority?.level] || '#9197ba';
+      const statusColor = { Pending:'#fbbf24', 'In Progress':'#4f9eff', Resolved:'#10d98a' }[c.status] || '#9197ba';
+      const msgs = ComplaintStore.getMessages(c.id);
+      return `
+        <div class="complaint-card">
+          <div class="cc-header">
+            <div class="cc-title">${escHtml(c.title)}</div>
+            <span class="badge" style="background:${statusColor}20;color:${statusColor};border:1px solid ${statusColor}40;">${c.status}</span>
+          </div>
+          <p class="cc-desc">${escHtml(truncate(c.description || c.text || '', 120))}</p>
+          <div class="cc-meta">
+            <span class="badge" style="background:${sentColor}15;color:${sentColor};border:1px solid ${sentColor}30;">${c.sentiment?.emoji || ''} ${c.sentiment?.label || 'Analyzing'}</span>
+            <span class="badge" style="background:${priColor}15;color:${priColor};border:1px solid ${priColor}30;">${c.priority?.level || '–'} Priority</span>
+            <span class="badge" style="background:rgba(124,110,245,0.12);color:#a78bfa;border:1px solid rgba(124,110,245,0.25);">${c.classification?.icon || '💬'} ${c.classification?.category || c.category || 'General'}</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);margin-left:auto;">${formatTimeAgo(c.createdAt || c.timestamp)}</span>
+          </div>
+          <div class="cc-actions">
+            <a href="client-chat.html?id=${c.id}" class="btn btn-primary btn-sm">💬 Chat ${msgs.length ? `<span class="msg-count">${msgs.length}</span>` : ''}</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('statusFilters').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-pill');
+    if (!btn) return;
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.status;
+    renderList();
+  });
+
+  renderStats();
+  renderList();
+  const complaintsAutoRefresh = setInterval(() => { renderStats(); renderList(); }, 10000);
+  window.addEventListener('beforeunload', () => clearInterval(complaintsAutoRefresh));
+</script>
+</body>
+</html>

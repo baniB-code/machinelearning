@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CogniSense CX — AI Complaint Intelligence Platform</title>
+  <meta name="description" content="AI-powered complaint intelligence and customer experience analytics system. Analyze sentiment, classify complaints, and prioritize customer issues instantly." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ─── Hero Section ─────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(124,110,245,0.1);
+      border: 1px solid rgba(124,110,245,0.25);
+      border-radius: 999px;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-purple);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      animation: pulse-glow 2s ease-in-out infinite;
+      box-shadow: 0 0 6px var(--accent-green);
+    }
+
+    .hero-title {
+      font-size: clamp(2.8rem, 8vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .hero-title .gradient-text {
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-desc {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      color: var(--text-secondary);
+      max-width: 680px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.8;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 4rem;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    /* ─── Floating Orbs ─────────────────────────────────────── */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .orb-1 { width: 400px; height: 400px; background: rgba(124,110,245,0.15); top: 10%; left: -15%; }
+    .orb-2 { width: 350px; height: 350px; background: rgba(79,158,255,0.1); bottom: 10%; right: -10%; }
+    .orb-3 { width: 250px; height: 250px; background: rgba(0,212,255,0.08); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+    /* ─── Stats Strip ───────────────────────────────────────── */
+    .stats-strip {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      padding: 2rem;
+      background: var(--bg-card);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      animation: fadeUp 0.6s 0.4s ease both;
+      flex-wrap: wrap;
+    }
+
+    .strip-stat { text-align: center; }
+    .strip-stat .num { font-size: 2rem; font-weight: 900; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .strip-stat .lbl { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.2rem; }
+
+    /* ─── Features Grid ─────────────────────────────────────── */
+    .features { padding: 6rem 0; }
+
+    .feature-card {
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gradient-primary);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .feature-card:hover::before { transform: scaleX(1); }
+
+    .feature-icon {
+      width: 56px; height: 56px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      background: var(--gradient-card);
+      border: 1px solid var(--glass-border);
+    }
+
+    .feature-title { font-size: 1.15rem; font-weight: 700; }
+    .feature-desc { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; }
+
+    /* ─── How it Works ──────────────────────────────────────── */
+    .how-it-works { padding: 6rem 0; background: linear-gradient(to bottom, transparent, rgba(124,110,245,0.03), transparent); }
+
+    .steps { display: flex; flex-direction: column; gap: 1px; max-width: 700px; margin: 0 auto; position: relative; }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      left: 28px; top: 0; bottom: 0; width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--accent-purple), transparent);
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      padding: 1.5rem 1.5rem 1.5rem 0;
+    }
+
+    .step-num {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-button);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-content h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .step-content p  { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+
+    /* ─── CTA Section ───────────────────────────────────────── */
+    .cta-section {
+      padding: 6rem 0;
+      text-align: center;
+    }
+
+    .cta-card {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 4rem 3rem;
+      background: var(--gradient-card);
+      border: 1px solid rgba(124,110,245,0.2);
+      border-radius: var(--radius-xl);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '🧠';
+      position: absolute;
+      font-size: 12rem;
+      opacity: 0.03;
+      bottom: -2rem;
+      right: -2rem;
+    }
+
+    /* ─── Footer ────────────────────────────────────────────── */
+    .footer {
+      padding: 2rem;
+      text-align: center;
+      border-top: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-brand">
+      <div class="logo-icon">🧠</div>
+      <span class="brand-name">CogniSense CX</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+    </ul>
+    <div class="nav-controls">
+      <button id="themeToggle" title="Toggle theme">☀️</button>
+      <div id="navAuthBtns"></div>
+    </div>
+  </nav>
+
+  <div class="page-content">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+
+      <div>
+        <div class="hero-badge">
+          <span class="dot"></span>
+          AI-Powered · Real-Time · Intelligent
+        </div>
+
+        <h1 class="hero-title">
+          <span class="gradient-text">CogniSense CX</span><br />
+          Complaint Intelligence<br />Redefined
+        </h1>
+
+        <p class="hero-desc">
+          An AI-powered complaint intelligence and customer experience analytics system.
+          Analyze sentiment, classify issues, and prioritize customer complaints — instantly.
+        </p>
+
+        <div class="hero-actions">
+          <a href="login.html" class="btn btn-primary btn-lg" id="heroClientBtn">
+            👤 Client Portal
+          </a>
+          <a href="login.html" class="btn btn-outline btn-lg" id="heroAdminBtn">
+            🛡️ Admin Dashboard
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="strip-stat"><div class="num">99.1%</div><div class="lbl">Classification Accuracy</div></div>
+      <div class="strip-stat"><div class="num">&lt;100ms</div><div class="lbl">Analysis Speed</div></div>
+      <div class="strip-stat"><div class="num">6+</div><div class="lbl">Complaint Categories</div></div>
+      <div class="strip-stat"><div class="num">3</div><div class="lbl">Sentiment Labels</div></div>
+    </div>
+
+    <!-- Features -->
+    <section class="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">✨ Core Capabilities</div>
+          <h2 class="section-title">Intelligent CX at Every Layer</h2>
+          <p class="section-sub">Powered by NLP and ML concepts to surface the insights that matter most.</p>
+        </div>
+
+        <div class="grid-3">
+          <div class="card feature-card">
+            <div class="feature-icon">💬</div>
+            <div class="feature-title">Sentiment Analysis</div>
+            <div class="feature-desc">NLP-powered detection of Positive, Negative, and Neutral sentiments with confidence scoring and lexical diversity metrics.</div>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🗂️</div>
+            <div class="feature-title">Auto-Classification</div>
+            <div class="feature-desc">Automatically routes complaints into 6 categories: Billing, Product, Service, Technical, Shipping, and Account issues.</div>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">🔴</div>
+            <div class="feature-title">Priority Scoring</div>
+            <div class="feature-desc">Dynamic urgency scoring (Low/Medium/High) using keyword intensity, sentiment polarity, and text signal analysis.</div>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">📊</div>
+            <div class="feature-title">Live Dashboard</div>
+            <div class="feature-desc">Interactive charts showing complaint volume, sentiment distribution, and category breakdowns — all powered by Chart.js.</div>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">📈</div>
+            <div class="feature-title">Trend Analytics</div>
+            <div class="feature-desc">Track complaint trends over time, identify peak periods, and uncover patterns in customer feedback data.</div>
+          </div>
+          <div class="card feature-card">
+            <div class="feature-icon">📥</div>
+            <div class="feature-title">CSV Import & Export</div>
+            <div class="feature-desc">Bulk upload complaints via CSV, process them automatically, and export full reports with one click.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it Works -->
+    <section class="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">⚙️ How It Works</div>
+          <h2 class="section-title">From Input to Insights</h2>
+          <p class="section-sub">Our ML pipeline processes each complaint through multiple analysis layers.</p>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h3>Text Ingestion & Tokenization</h3>
+              <p>Complaint text is received and tokenized — split into individual terms. Stop words are identified and intensity modifiers (negators, amplifiers) are tracked.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h3>Sentiment Analysis (NLP)</h3>
+              <p>Each token is scored against a sentiment lexicon. Negators and intensifiers adjust polarity scores to produce a final Positive / Negative / Neutral label with confidence.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h3>Text Classification</h3>
+              <p>Domain keyword matching across 6 complaint categories using weighted TF-style scoring. The best-matching category is selected with a confidence percentage.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <h3>Priority Scoring</h3>
+              <p>Urgency signals, emotional intensity (exclamation marks, length), and negative sentiment combine into a composite priority score: Low, Medium, or High.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <h3>Dashboard & Insights</h3>
+              <p>All results are stored locally and aggregated into real-time charts, trend visualizations, and analytics summaries on the dashboard.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-card card">
+          <div class="section-tag" style="margin-bottom: 1.5rem;">🚀 Get Started</div>
+          <h2 class="section-title">Ready to Decode Your Customers?</h2>
+          <p class="section-sub" style="margin-bottom: 2.5rem;">
+            Register as a client to submit complaints, or login as an admin to manage and reply.
+          </p>
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="register.html" class="btn btn-primary btn-lg">👤 Register as Client</a>
+            <a href="login.html" class="btn btn-outline btn-lg">🛡️ Admin Login</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>🧠 CogniSense CX &mdash; AI-Powered Complaint Intelligence &amp; Customer Experience Analytics</p>
+      <p style="margin-top: 0.3rem;">Built with NLP · ML Concepts · Chart.js · Vanilla JS</p>
+    </footer>
+
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // If already logged in, show portal quick-access buttons
+    document.addEventListener('DOMContentLoaded', () => {
+      const sess = Auth.getSession();
+      const navBtns = document.getElementById('navAuthBtns');
+      if (sess) {
+        navBtns.innerHTML = `
+          <a href="${sess.role === 'admin' ? 'admin-dashboard.html' : 'client-complaints.html'}" class="btn btn-primary btn-sm">
+            ${sess.role === 'admin' ? '🛡️ My Dashboard' : '👤 My Portal'}
+          </a>
+        `;
+        document.getElementById('heroClientBtn').href = 'client-complaints.html';
+        document.getElementById('heroAdminBtn').href  = 'admin-dashboard.html';
+      } else {
+        navBtns.innerHTML = `
+          <a href="login.html" class="btn btn-outline btn-sm">Login</a>
+          <a href="register.html" class="btn btn-primary btn-sm">Register →</a>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

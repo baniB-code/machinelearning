@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ section.title }} - CogniSense CX</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="auth-wrap auth-landing">
+    <div class="auth-orbits" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+    <span class="planet planet-left" aria-hidden="true"></span>
+    <span class="planet planet-right" aria-hidden="true"></span>
+
+    <div class="auth-nav">
+      <div class="auth-logo">COGNISENSE</div>
+      <div class="auth-nav-links">
+        <a href="{{ url_for('landing_info', section='analytics') }}">Analytics</a>
+        <a href="{{ url_for('landing_info', section='models') }}">Models</a>
+        <a href="{{ url_for('landing_info', section='insights') }}">Insights</a>
+      </div>
+      <div class="auth-nav-actions">
+        <a class="ghost-btn" href="{{ url_for('landing_info', section='explore') }}">Explore</a>
+        <a class="solid-btn" href="{{ url_for('login') }}">Sign In</a>
+      </div>
+    </div>
+
+    <div class="card info-card">
+      <h1>{{ section.title }}</h1>
+      <p>{{ section.description }}</p>
+      <ul class="top-list">
+        {% for item in section.bullets %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      <div class="info-actions">
+        <a class="solid-btn" href="{{ url_for('login') }}">Back to Login</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

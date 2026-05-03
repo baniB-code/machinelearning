@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - CogniSense CX</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .password-wrap { position: relative; }
+    .password-toggle { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); width: auto; padding: 0.35rem 0.5rem; font-size: 0.72rem; border: 1px solid var(--border); background: rgba(30, 41, 59, 0.95); border-radius: 8px; margin: 0; box-shadow: none; }
+    .field-error { color: var(--error-text); font-size: 0.78rem; margin-top: 0.35rem; min-height: 1em; }
+    .field-inline-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.8rem; }
+    .checkbox-wrap { display: flex; align-items: center; gap: 0.45rem; font-size: 0.82rem; color: #3d5246; }
+    .checkbox-wrap input { width: auto; margin: 0; accent-color: var(--primary); }
+    .muted-link { color: #a5b4fc; text-decoration: none; font-size: 0.82rem; font-weight: 600; }
+  </style>
+</head>
+<body class="cx-login-page">
+  <div class="cx-bg cx-bg-login" aria-hidden="true"></div>
+  <a href="{{ url_for('landing_info', section='analytics') }}" class="back-link">← Learn More</a>
+  <div class="auth-card cx-login-card">
+    <div class="auth-logo">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <div class="cx-login-brand-title">CogniSense CX</div>
+        <div class="cx-login-tagline">AI Complaint Intelligence</div>
+      </div>
+    </div>
+
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">Sign in to open the complaint intelligence workspace.</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="error-msg" style="display:block; color:{{ '#f87171' if category == 'error' else '#10d98a' }}; border-color:{{ 'rgba(248,113,113,0.3)' if category == 'error' else 'rgba(16,217,138,0.35)' }};">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form class="auth-form" method="post" novalidate id="loginForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" name="username" placeholder="admin" required aria-describedby="usernameError" autocomplete="username" />
+        <div id="usernameError" class="field-error" aria-live="polite"></div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input id="password" name="password" type="password" placeholder="••••••••" required aria-describedby="passwordError" autocomplete="current-password" />
+          <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password">Show</button>
+        </div>
+        <div id="passwordError" class="field-error" aria-live="polite"></div>
+      </div>
+      <div class="field-inline-row">
+        <label class="checkbox-wrap" for="rememberMe">
+          <input type="checkbox" id="rememberMe" />
+          Remember me
+        </label>
+        <a href="#" class="muted-link">Forgot password?</a>
+      </div>
+      <button type="submit" class="auth-btn" id="loginBtn">Sign In →</button>
+    </form>
+
+    <div class="demo-accounts">
+      <div class="demo-label">Quick Demo Login</div>
+      <button class="demo-btn" type="button" onclick="fillDemo('admin','admin123')">🛡️ <span><strong>Admin</strong> — admin / admin123</span></button>
+    </div>
+
+    <div class="auth-footer">Need product context? <a href="{{ url_for('landing_info', section='explore') }}">View Features</a></div>
+    <p class="cx-login-stack">Flask · scikit-learn · pandas · joblib</p>
+  </div>
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const usernameEl = document.getElementById('username');
+    const passwordEl = document.getElementById('password');
+    const usernameErrorEl = document.getElementById('usernameError');
+    const passwordErrorEl = document.getElementById('passwordError');
+    const loginBtn = document.getElementById('loginBtn');
+    const passwordToggleEl = document.getElementById('passwordToggle');
+
+    function clearErrors() {
+      usernameErrorEl.textContent = '';
+      passwordErrorEl.textContent = '';
+    }
+
+    passwordToggleEl.addEventListener('click', () => {
+      const isHidden = passwordEl.type === 'password';
+      passwordEl.type = isHidden ? 'text' : 'password';
+      passwordToggleEl.textContent = isHidden ? 'Hide' : 'Show';
+      passwordToggleEl.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+    });
+
+    function fillDemo(username, pw) {
+      document.getElementById('username').value = username;
+      document.getElementById('password').value = pw;
+      document.getElementById('username').focus();
+      clearErrors();
+    }
+
+    loginForm.addEventListener('submit', (event) => {
+      clearErrors();
+      let hasErrors = false;
+      if (!usernameEl.value.trim()) {
+        usernameErrorEl.textContent = 'Username is required.';
+        hasErrors = true;
+      }
+      if (!passwordEl.value) {
+        passwordErrorEl.textContent = 'Password is required.';
+        hasErrors = true;
+      }
+      if (hasErrors) {
+        event.preventDefault();
+        return;
+      }
+      loginBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Signing in...';
+      loginBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>

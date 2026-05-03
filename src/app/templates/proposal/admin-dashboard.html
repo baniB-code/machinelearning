@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — CogniSense CX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/app-layout.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .dash-full { grid-column: 1 / -1; }
+    @media(max-width:900px){ .dashboard-grid { grid-template-columns: 1fr; } .dash-full { grid-column: 1; } }
+    .chart-card { padding: 1.5rem; }
+    .chart-title { font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+    .chart-wrap { position: relative; height: 240px; }
+    .high-priority-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .hp-item { padding: 0.85rem 1rem; background: var(--bg-tertiary); border-radius: var(--radius); border-left: 3px solid #f87171; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+    .hp-title { font-size: 0.85rem; font-weight: 700; }
+    .hp-user  { font-size: 0.75rem; color: var(--text-muted); margin-top:0.15rem; }
+    .hp-actions { display:flex; gap:0.4rem; flex-shrink:0; }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="app-main">
+    <div class="page-topbar">
+      <div>
+        <div class="section-tag">📊 Admin Portal</div>
+        <h1 style="font-size:1.6rem;font-weight:900;margin-top:0.25rem;">Analytics Dashboard</h1>
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-top:0.2rem;">Real-time complaint intelligence overview.</p>
+      </div>
+      <div style="display:flex;gap:0.6rem;">
+        <button class="btn btn-outline btn-sm" id="refreshBtn">🔄 Refresh</button>
+        <a href="admin-complaints.html" class="btn btn-primary btn-sm">📋 View All Complaints</a>
+      </div>
+    </div>
+
+    <!-- KPI Strip -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.75rem;" id="kpiStrip"></div>
+
+    <!-- Charts -->
+    <div class="dashboard-grid">
+      <!-- Trend (full width) -->
+      <div class="card chart-card dash-full">
+        <div class="chart-title">📈 Complaints Over Time (14 Days)</div>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+
+      <!-- Sentiment Doughnut -->
+      <div class="card chart-card">
+        <div class="chart-title">💬 Sentiment Distribution</div>
+        <div class="chart-wrap"><canvas id="sentimentChart"></canvas></div>
+      </div>
+
+      <!-- Category Bar -->
+      <div class="card chart-card">
+        <div class="chart-title">🏆 Complaints by Category</div>
+        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+      </div>
+
+      <!-- Status Doughnut -->
+      <div class="card chart-card">
+        <div class="chart-title">📌 Status Breakdown</div>
+        <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+      </div>
+
+      <!-- Priority Polar -->
+      <div class="card chart-card">
+        <div class="chart-title">🔴 Priority Distribution</div>
+        <div class="chart-wrap"><canvas id="priorityChart"></canvas></div>
+      </div>
+
+      <!-- High Priority List -->
+      <div class="card chart-card dash-full">
+        <div class="chart-title">🚨 High Priority Complaints — Needs Immediate Attention</div>
+        <div class="high-priority-list" id="highPriList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/app.js"></script>
+<script src="js/ml-engine.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/complaint-store.js"></script>
+<script>
+  if (!requireAuth('admin')) throw new Error('Not authenticated');
+  Layout.render('admin-dashboard.html');
+
+  const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+  function cc() { return { text: isDark() ? 'rgba(145,151,186,0.8)' : 'rgba(74,79,122,0.8)', grid: isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(124,110,245,0.1)' }; }
+
+  let charts = {};
+
+  function destroyAll() { Object.values(charts).forEach(c => c?.destroy()); charts = {}; }
+
+  function renderKPI(stats) {
+    const kpis = [
+      { label:'Total Complaints', val: stats.total, color:'#7c6ef5', icon:'📋' },
+      { label:'High Priority',  val: stats.priorityCounts.High  || 0, color:'#f87171', icon:'🔴' },
+      { label:'Pending',        val: stats.statusCounts.Pending || 0, color:'#fbbf24', icon:'⏳' },
+      { label:'In Progress',    val: stats.statusCounts['In Progress'] || 0, color:'#4f9eff', icon:'🔧' },
+      { label:'Resolved',       val: stats.statusCounts.Resolved || 0, color:'#10d98a', icon:'✅' },
+      { label:'Negative Sent.',  val: stats.sentimentCounts.Negative || 0, color:'#f87171', icon:'😠' },
+    ];
+    document.getElementById('kpiStrip').innerHTML = kpis.map(k => `
+      <div class="stat-mini-card">
+        <div class="smc-icon">${k.icon}</div>
+        <div class="smc-val" style="color:${k.color};">${k.val}</div>
+        <div class="smc-label">${k.label}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderCharts(stats) {
+    const c = cc();
+    destroyAll();
+
+    // Trend
+    const trendEntries = Object.entries(stats.dailyTrend).filter(([k]) => k !== 'unknown').sort(([a],[b]) => a.localeCompare(b)).slice(-14);
+    charts.trend = new Chart(document.getElementById('trendChart'), {
+      type: 'bar',
+      data: {
+        labels: trendEntries.map(([d]) => d.substring(5)),
+        datasets: [
+          { type:'bar',  label: 'Complaints', data: trendEntries.map(([,v]) => v), backgroundColor:'rgba(124,110,245,0.4)', borderColor:'#7c6ef5', borderWidth:2, borderRadius:4, order:2 },
+          { type:'line', label: 'Trend',      data: trendEntries.map(([,v]) => v), borderColor:'#4f9eff', backgroundColor:'transparent', tension:0.4, pointBackgroundColor:'#4f9eff', pointRadius:4, order:1 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ticks:{color:c.text,precision:0},grid:{color:c.grid},beginAtZero:true}, x:{ticks:{color:c.text},grid:{color:c.grid}} }, plugins:{legend:{labels:{color:c.text}}} }
+    });
+
+    // Sentiment Doughnut
+    const sentData = [stats.sentimentCounts.Positive||0, stats.sentimentCounts.Negative||0, stats.sentimentCounts.Neutral||0];
+    charts.sentiment = new Chart(document.getElementById('sentimentChart'), {
+      type: 'doughnut',
+      data: { labels:['Positive','Negative','Neutral'], datasets:[{ data:sentData, backgroundColor:['rgba(16,217,138,0.8)','rgba(248,113,113,0.8)','rgba(145,151,186,0.8)'], borderColor:['#10d98a','#f87171','#9197ba'], borderWidth:2, hoverOffset:6 }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:c.text,font:{size:12}}} } }
+    });
+
+    // Category Bar
+    const catEntries = Object.entries(stats.categoryCounts).sort((a,b) => b[1]-a[1]).slice(0,7);
+    charts.category = new Chart(document.getElementById('categoryChart'), {
+      type: 'bar',
+      data: { labels: catEntries.map(([k]) => k), datasets:[{ label:'Complaints', data:catEntries.map(([,v]) => v), backgroundColor:['#7c6ef5','#4f9eff','#10d98a','#fbbf24','#f87171','#00d4ff','#a78bfa'].map(c => c+'cc'), borderRadius:4 }] },
+      options: { responsive:true, maintainAspectRatio:false, indexAxis:'y', scales:{ x:{ticks:{color:c.text,precision:0},grid:{color:c.grid},beginAtZero:true}, y:{ticks:{color:c.text},grid:{color:c.grid}} }, plugins:{legend:{display:false}} }
+    });
+
+    // Status Doughnut
+    const stData = [stats.statusCounts.Pending||0, stats.statusCounts['In Progress']||0, stats.statusCounts.Resolved||0];
+    charts.status = new Chart(document.getElementById('statusChart'), {
+      type: 'doughnut',
+      data: { labels:['Pending','In Progress','Resolved'], datasets:[{ data:stData, backgroundColor:['rgba(251,191,36,0.8)','rgba(79,158,255,0.8)','rgba(16,217,138,0.8)'], borderColor:['#fbbf24','#4f9eff','#10d98a'], borderWidth:2, hoverOffset:6 }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:c.text,font:{size:12}}} } }
+    });
+
+    // Priority Polar
+    charts.priority = new Chart(document.getElementById('priorityChart'), {
+      type: 'polarArea',
+      data: { labels:['High','Medium','Low'], datasets:[{ data:[stats.priorityCounts.High||0,stats.priorityCounts.Medium||0,stats.priorityCounts.Low||0], backgroundColor:['rgba(248,113,113,0.6)','rgba(251,191,36,0.6)','rgba(16,217,138,0.6)'], borderColor:['#f87171','#fbbf24','#10d98a'], borderWidth:2 }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:c.text}} }, scales:{ r:{ticks:{display:false},grid:{color:c.grid}} } }
+    });
+  }
+
+  function renderHighPriority() {
+    const allComplaints = ComplaintStore.getAll();
+    if (!allComplaints) {
+      showBanner('Unable to load high-priority tickets.', 'error');
+      return;
+    }
+    const hp  = allComplaints.filter(c => c.priority?.level === 'High').slice(0, 6);
+    const el  = document.getElementById('highPriList');
+    if (!hp.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:1rem;">No high priority complaints. 🎉</p>'; return; }
+    el.innerHTML = hp.map(c => `
+      <div class="hp-item">
+        <div style="flex:1;min-width:0;">
+          <div class="hp-title">${escHtml(c.title)}</div>
+          <div class="hp-user">👤 ${escHtml(c.userName || 'Unknown')} · ${formatTimeAgo(c.createdAt || c.timestamp)}</div>
+          <div style="margin-top:0.35rem;font-size:0.78rem;color:var(--text-secondary);">${escHtml(truncate(c.description || c.text || '', 90))}</div>
+        </div>
+        <div class="hp-actions">
+          <span class="badge" style="background:rgba(248,113,113,0.15);color:#f87171;border:1px solid rgba(248,113,113,0.3);">${c.status}</span>
+          <a href="admin-chat.html?id=${c.id}" class="btn btn-primary btn-sm">💬 Reply</a>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function refresh() {
+    const stats = ComplaintStore.getStats();
+    if (!stats || typeof stats.total === 'undefined') {
+      showBanner('Dashboard data failed to load. Retrying…', 'error');
+      return;
+    }
+    clearBanner();
+    renderKPI(stats);
+    renderCharts(stats);
+    renderHighPriority();
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', refresh);
+
+  // Re-render charts on theme toggle
+  const obs = new MutationObserver(() => { const stats = ComplaintStore.getStats(); renderCharts(stats); });
+  obs.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+
+  refresh();
+  const dashboardAutoRefresh = setInterval(refresh, 10000);
+  window.addEventListener('beforeunload', () => clearInterval(dashboardAutoRefresh));
+</script>
+</body>
+</html>

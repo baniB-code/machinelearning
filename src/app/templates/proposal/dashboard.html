@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — CogniSense CX</title>
+  <meta name="description" content="View complaint analytics, sentiment distribution, category breakdowns, and high-priority complaints in real-time." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .dash-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .dash-full { grid-column: 1 / -1; }
+
+    @media (max-width: 900px) {
+      .dash-layout { grid-template-columns: 1fr; }
+      .dash-full { grid-column: 1; }
+    }
+
+    .chart-card { padding: 1.75rem; }
+    .chart-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-canvas-wrap { position: relative; height: 260px; }
+
+    /* ─── Stat Card Row ─────────────────────────────────── */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.5rem; }
+
+    @media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
+
+    .kpi-card {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::after {
+      content: attr(data-icon);
+      position: absolute;
+      right: -0.5rem;
+      bottom: -0.5rem;
+      font-size: 3.5rem;
+      opacity: 0.07;
+      pointer-events: none;
+    }
+
+    .kpi-lbl { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .kpi-val { font-size: 2.2rem; font-weight: 900; line-height: 1; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .kpi-sub { font-size: 0.78rem; color: var(--text-secondary); }
+
+    /* ─── High Priority List ────────────────────────────── */
+    .priority-item {
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--glass-border);
+      margin-bottom: 0.6rem;
+      transition: var(--transition);
+    }
+    .priority-item:hover { background: var(--bg-card-hover); border-color: rgba(248,113,113,0.3); }
+    .priority-item:last-child { margin-bottom: 0; }
+
+    .priority-item-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .priority-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; }
+
+    /* ─── Empty State ───────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
+    .empty-state a { color: var(--accent-purple); }
+
+    /* ─── Refresh Button ────────────────────────────────── */
+    .dash-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .last-updated {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="nav-brand">
+      <div class="logo-icon">🧠</div>
+      <span class="brand-name">CogniSense CX</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="analyze.html">Analyze</a></li>
+      <li><a href="dashboard.html" class="active">Dashboard</a></li>
+      <li><a href="admin.html">Analytics</a></li>
+      <li><a href="admin-messaging.html">Messaging</a></li>
+    </ul>
+    <div class="nav-controls">
+      <button id="themeToggle" title="Toggle theme">☀️</button>
+    </div>
+  </nav>
+
+  <div class="page-content">
+    <div class="container" style="padding-top:2.5rem; padding-bottom:4rem;">
+
+      <div class="dash-actions">
+        <div>
+          <div class="section-tag" style="margin-bottom:0.5rem;">📊 Live Analytics</div>
+          <h1 style="font-size:1.8rem; font-weight:900;">Dashboard</h1>
+          <div class="last-updated" id="lastUpdated">Last updated: –</div>
+        </div>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" id="refreshBtn">🔄 Refresh</button>
+          <button class="btn btn-outline btn-sm" id="exportCsvBtn">⬇️ Export CSV</button>
+          <a href="analyze.html" class="btn btn-primary btn-sm">+ New Complaint</a>
+        </div>
+      </div>
+
+      <!-- ─── KPI Row ─────────────────────────────────── -->
+      <div class="kpi-row" id="kpiRow">
+        <div class="card kpi-card" data-icon="📋">
+          <div class="kpi-lbl">Total Complaints</div>
+          <div class="kpi-val" id="kpiTotal">0</div>
+          <div class="kpi-sub">All time</div>
+        </div>
+        <div class="card kpi-card" data-icon="🔴">
+          <div class="kpi-lbl">High Priority</div>
+          <div class="kpi-val" id="kpiHigh" style="background:linear-gradient(135deg,#f87171,#ef4444); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">0</div>
+          <div class="kpi-sub">Urgent issues</div>
+        </div>
+        <div class="card kpi-card" data-icon="😠">
+          <div class="kpi-lbl">Negative</div>
+          <div class="kpi-val" id="kpiNeg" style="background:linear-gradient(135deg,#f59e0b,#ef4444); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">0</div>
+          <div class="kpi-sub">Sentiment</div>
+        </div>
+        <div class="card kpi-card" data-icon="😊">
+          <div class="kpi-lbl">Positive</div>
+          <div class="kpi-val" id="kpiPos" style="background:linear-gradient(135deg,#10d98a,#4f9eff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">0</div>
+          <div class="kpi-sub">Sentiment</div>
+        </div>
+      </div>
+
+      <!-- ─── Charts Row ──────────────────────────────── -->
+      <div class="dash-layout">
+
+        <!-- Sentiment Pie -->
+        <div class="card chart-card">
+          <div class="chart-title">😊 Sentiment Distribution</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="sentimentChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Category Bar -->
+        <div class="card chart-card">
+          <div class="chart-title">🗂️ Complaint Categories</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Priority Doughnut -->
+        <div class="card chart-card">
+          <div class="chart-title">🔴 Priority Breakdown</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="priorityChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Trend Line -->
+        <div class="card chart-card">
+          <div class="chart-title">📈 Volume Over Time</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+        <!-- High Priority List -->
+        <div class="card chart-card dash-full">
+          <div class="chart-title">🔴 High Priority Complaints</div>
+          <div id="highPriorityList"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script src="js/ml-engine.js"></script>
+  <script>
+    function showToast(msg, type = 'info') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.innerHTML = `<span>${type === 'success' ? '✅' : 'ℹ️'}</span><span>${msg}</span>`;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    // ─── Chart Defaults ───────────────────────────────────
+    const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+
+    function chartColors() {
+      return {
+        text: isDark() ? 'rgba(145,151,186,0.8)' : 'rgba(74,79,122,0.8)',
+        grid: isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(124,110,245,0.1)',
+      };
+    }
+
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.animation.duration = 800;
+
+    let sentimentChart, categoryChart, priorityChart, trendChart;
+
+    function getChartData() {
+      const stats = Store.getStats();
+      return stats;
+    }
+
+    function buildCharts() {
+      const stats = getChartData();
+      const cc = chartColors();
+
+      // ─── Sentiment Pie ──────────────────────────────
+      if (sentimentChart) sentimentChart.destroy();
+      sentimentChart = new Chart(document.getElementById('sentimentChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Positive', 'Negative', 'Neutral'],
+          datasets: [{
+            data: [
+              stats.sentimentCounts.Positive || 0,
+              stats.sentimentCounts.Negative || 0,
+              stats.sentimentCounts.Neutral  || 0,
+            ],
+            backgroundColor: ['rgba(16,217,138,0.8)', 'rgba(248,113,113,0.8)', 'rgba(145,151,186,0.6)'],
+            borderColor: ['#10d98a', '#f87171', '#9197ba'],
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: cc.text, padding: 16, usePointStyle: true } }
+          },
+          cutout: '60%',
+        }
+      });
+
+      // ─── Category Bar ───────────────────────────────
+      const catEntries = Object.entries(stats.categoryCounts).sort((a,b) => b[1]-a[1]);
+      const catColors = ['#7c6ef5','#4f9eff','#10d98a','#fbbf24','#f87171','#00d4ff','#a78bfa'];
+
+      if (categoryChart) categoryChart.destroy();
+      categoryChart = new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+          labels: catEntries.map(([k]) => k),
+          datasets: [{
+            label: 'Complaints',
+            data: catEntries.map(([,v]) => v),
+            backgroundColor: catColors.slice(0, catEntries.length).map(c => c + 'cc'),
+            borderColor: catColors.slice(0, catEntries.length),
+            borderWidth: 2,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+          scales: {
+            y: { ticks: { color: cc.text, font: { size: 11 } }, grid: { color: cc.grid } },
+            x: { ticks: { color: cc.text }, grid: { color: cc.grid } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // ─── Priority Doughnut ──────────────────────────
+      if (priorityChart) priorityChart.destroy();
+      priorityChart = new Chart(document.getElementById('priorityChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['High', 'Medium', 'Low'],
+          datasets: [{
+            data: [
+              stats.priorityCounts.High   || 0,
+              stats.priorityCounts.Medium || 0,
+              stats.priorityCounts.Low    || 0,
+            ],
+            backgroundColor: ['rgba(248,113,113,0.8)', 'rgba(251,191,36,0.8)', 'rgba(16,217,138,0.8)'],
+            borderColor: ['#f87171', '#fbbf24', '#10d98a'],
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: cc.text, usePointStyle: true, padding: 14 } } },
+          cutout: '60%',
+        }
+      });
+
+      // ─── Trend Line ─────────────────────────────────
+      const trendEntries = Object.entries(stats.dailyTrend)
+        .filter(([k]) => k !== 'unknown')
+        .sort(([a],[b]) => a.localeCompare(b))
+        .slice(-14); // last 14 days
+
+      if (trendChart) trendChart.destroy();
+      trendChart = new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+          labels: trendEntries.map(([d]) => d.substring(5)), // MM-DD
+          datasets: [{
+            label: 'Complaints',
+            data: trendEntries.map(([,v]) => v),
+            borderColor: '#7c6ef5',
+            backgroundColor: 'rgba(124,110,245,0.1)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#7c6ef5',
+            pointRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { ticks: { color: cc.text }, grid: { color: cc.grid }, beginAtZero: true,
+                 ticks: { precision: 0, color: cc.text } },
+            x: { ticks: { color: cc.text }, grid: { color: cc.grid } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function buildKPIs() {
+      const stats = Store.getStats();
+      const kpiTotal = document.getElementById('kpiTotal');
+      const kpiHigh  = document.getElementById('kpiHigh');
+      const kpiNeg   = document.getElementById('kpiNeg');
+      const kpiPos   = document.getElementById('kpiPos');
+
+      animateCounter(kpiTotal, stats.total);
+      animateCounter(kpiHigh,  stats.priorityCounts.High   || 0);
+      animateCounter(kpiNeg,   stats.sentimentCounts.Negative || 0);
+      animateCounter(kpiPos,   stats.sentimentCounts.Positive || 0);
+    }
+
+    function buildHighPriority() {
+      const items = Store.getHighPriority(8);
+      const el = document.getElementById('highPriorityList');
+      if (!items.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🟢</div>
+            <p>No high-priority complaints. <a href="analyze.html">Add some?</a></p>
+          </div>`;
+        return;
+      }
+      el.innerHTML = items.map(c => `
+        <div class="priority-item">
+          <div class="priority-item-header">
+            <span class="badge badge-high">🔴 High</span>
+            <span class="chip">${c.classification.icon} ${c.classification.category}</span>
+            <span class="badge badge-${c.sentiment.cssClass}">${c.sentiment.emoji} ${c.sentiment.label}</span>
+            <span style="margin-left:auto; font-size:0.75rem; color:var(--text-muted);">${formatTimeAgo(c.timestamp)}</span>
+          </div>
+          <div class="priority-text">${truncate(c.text, 140)}</div>
+        </div>
+      `).join('');
+    }
+
+    function refreshDashboard() {
+      const stats = Store.getStats();
+      document.getElementById('lastUpdated').textContent =
+        'Last updated: ' + new Date().toLocaleTimeString();
+
+      if (!stats.total) {
+        // Show empty state overlay
+        document.getElementById('kpiTotal').textContent = '0';
+        document.getElementById('kpiHigh').textContent = '0';
+        document.getElementById('kpiNeg').textContent = '0';
+        document.getElementById('kpiPos').textContent = '0';
+      } else {
+        buildKPIs();
+      }
+
+      buildCharts();
+      buildHighPriority();
+    }
+
+    // ─── Export CSV ───────────────────────────────────────
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      const all = Store.getAll();
+      if (!all.length) { showToast('No data to export', 'error'); return; }
+      const headers = ['ID','Text','Timestamp','Sentiment','Sentiment Confidence','Category','Priority','Priority Score'];
+      const rows = all.map(c => [
+        c.id,
+        `"${c.text.replace(/"/g,'""')}"`,
+        c.timestamp,
+        c.sentiment.label,
+        c.sentiment.confidence,
+        c.classification.category,
+        c.priority.level,
+        c.priority.score
+      ]);
+      const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `cognisense_export_${Date.now()}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV exported!', 'success');
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      refreshDashboard();
+      showToast('Dashboard refreshed', 'info');
+    });
+
+    // Re-render charts on theme change
+    const observer = new MutationObserver(() => buildCharts());
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    // ─── Init ─────────────────────────────────────────────
+    refreshDashboard();
+  </script>
+</body>
+</html>

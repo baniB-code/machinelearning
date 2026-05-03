@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}History - CogniSense CX{% endblock %}
+{% block content %}
+<div class="cx-panel cx-panel-white">
+  <div class="cx-history-head">
+    <div>
+      <h1 class="cx-panel-title" style="margin-bottom:0.25rem;">Scan history</h1>
+      <p class="cx-muted" id="cxHistoryHint">Results from this browser are stored in session storage.</p>
+    </div>
+    <button type="button" class="cx-btn cx-btn-danger-outline" id="cxHistoryClear">Clear</button>
+  </div>
+  <div id="cxHistoryEmpty" class="cx-muted" hidden>No scans yet—run one from the Scan tab.</div>
+  <ul class="cx-history-list" id="cxHistoryList"></ul>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var KEY = "cognisense_cx_scans";
+  var listEl = document.getElementById("cxHistoryList");
+  var emptyEl = document.getElementById("cxHistoryEmpty");
+  var hint = document.getElementById("cxHistoryHint");
+
+  function load() {
+    try {
+      var raw = sessionStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function save(arr) {
+    sessionStorage.setItem(KEY, JSON.stringify(arr));
+  }
+
+  function render() {
+    var items = load();
+    if (!Array.isArray(items)) items = [];
+    listEl.innerHTML = "";
+    if (!items.length) {
+      emptyEl.hidden = false;
+      if (hint) hint.textContent = "0 scan records in this browser.";
+      return;
+    }
+    emptyEl.hidden = true;
+    if (hint) hint.textContent = items.length + " scan record" + (items.length === 1 ? "" : "s") + " stored locally.";
+    items.forEach(function (row) {
+      var li = document.createElement("li");
+      li.className = "cx-history-item";
+      var ts = row.ts || "";
+      try {
+        ts = new Date(row.ts).toLocaleString();
+      } catch (e) {}
+      li.innerHTML =
+        '<div class="cx-history-main">' +
+        '<div class="cx-history-pred">' +
+        (row.prediction || "—") +
+        '</div>' +
+        '<div class="cx-history-snippet">' +
+        (row.snippet || "").replace(/</g, "&lt;") +
+        "</div>" +
+        '<div class="cx-history-meta">' +
+        ts +
+        "</div></div>" +
+        '<div class="cx-history-side">' +
+        (row.confidence != null
+          ? '<span class="cx-history-conf">' + row.confidence + "%</span>"
+          : "") +
+        '<button type="button" class="cx-btn cx-btn-delete" data-id="' +
+        (row.id || "") +
+        '">Delete</button></div>';
+      listEl.appendChild(li);
+    });
+
+    listEl.querySelectorAll(".cx-btn-delete").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-id");
+        var next = load().filter(function (r) { return r.id !== id; });
+        save(next);
+        render();
+      });
+    });
+  }
+
+  document.getElementById("cxHistoryClear").addEventListener("click", function () {
+    sessionStorage.removeItem(KEY);
+    render();
+  });
+
+  render();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CogniSense CX{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="cx-app">
+  <div class="cx-bg" aria-hidden="true"></div>
+  <div class="cx-shell">
+    <header class="cx-header">
+      <a href="{{ url_for('home') }}" class="cx-brand">
+        <span class="cx-brand-icon" aria-hidden="true">🧠</span>
+        <span class="cx-brand-text">
+          <span class="cx-brand-title">CogniSense CX</span>
+          <span class="cx-brand-sub">Intelligent complaint intelligence &amp; CX analytics</span>
+        </span>
+      </a>
+      <time class="cx-clock" id="cxClock" datetime=""></time>
+    </header>
+
+    <nav class="cx-nav" aria-label="Primary">
+      <a href="{{ url_for('home') }}" class="cx-nav-link {% if request.endpoint == 'home' %}active{% endif %}">Home</a>
+      <a href="{{ url_for('predict') }}" class="cx-nav-link {% if request.endpoint == 'predict' %}active{% endif %}">Scan</a>
+      <a href="{{ url_for('encyclopedia') }}" class="cx-nav-link {% if request.endpoint == 'encyclopedia' %}active{% endif %}">Encyclopedia</a>
+      <a href="{{ url_for('history') }}" class="cx-nav-link {% if request.endpoint == 'history' %}active{% endif %}">History</a>
+      <a href="{{ url_for('upload') }}" class="cx-nav-link cx-nav-muted {% if request.endpoint == 'upload' %}active{% endif %}">Dataset</a>
+      <span class="cx-nav-spacer"></span>
+      <a href="{{ url_for('logout') }}" class="cx-nav-link cx-logout">Logout</a>
+    </nav>
+
+    <main class="cx-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="cx-alerts">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category in ['error','success'] else 'error' }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="cx-footer">
+      Built with Flask, scikit-learn (TF-IDF + Logistic Regression), pandas, joblib, and Waitress.
+    </footer>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById("cxClock");
+      function tick() {
+        if (!el) return;
+        var d = new Date();
+        el.textContent = d.toLocaleString(undefined, {
+          weekday: "short",
+          month: "numeric",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        el.setAttribute("datetime", d.toISOString());
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

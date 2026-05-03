@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Scan - CogniSense CX{% endblock %}
+{% block content %}
+<div class="cx-grid-2 cx-scan-grid">
+  <section class="cx-panel cx-panel-white">
+    <h1 class="cx-panel-title">Start scanning</h1>
+    <p class="cx-panel-lead">Paste a consumer complaint narrative. The model ranks issue categories and adds sentiment and urgency signals.</p>
+
+    <h2 class="cx-h2">Quick examples</h2>
+    <p class="cx-muted">Click a chip to fill the text area.</p>
+    <div class="cx-chip-grid">
+      <button type="button" class="cx-chip" data-example="My checking account was charged unauthorized fees and the bank refuses to reverse the charges.">Unauthorized bank fees</button>
+      <button type="button" class="cx-chip" data-example="A debt collector keeps calling me for a loan that is already paid and keeps threatening legal action.">Debt collection harassment</button>
+      <button type="button" class="cx-chip" data-example="My credit report shows an account that is not mine, and the dispute process did not fix the error.">Credit report dispute</button>
+      <button type="button" class="cx-chip" data-example="My mortgage payment was processed but not reflected in my account balance for several weeks.">Mortgage payment issue</button>
+      <button type="button" class="cx-chip" data-example="I was charged for a credit card purchase I did not make and customer support denied my refund.">Unauthorized card purchase</button>
+    </div>
+
+    <form method="post" id="predict-form" class="cx-form">
+      <label for="narrative-input">Complaint narrative</label>
+      <textarea id="narrative-input" name="narrative" rows="8" placeholder="Paste complaint text here…" required>{{ narrative or '' }}</textarea>
+      <button type="submit" class="cx-btn cx-btn-primary" id="predict-button">Run scan</button>
+    </form>
+  </section>
+
+  <section class="cx-panel cx-panel-white cx-results">
+    <h1 class="cx-panel-title">Latest result</h1>
+    {% if prediction %}
+      <div class="cx-result-hero">
+        <div class="cx-result-label">Top prediction</div>
+        <div class="cx-result-title">{{ prediction }}</div>
+        {% if probability_rows and probability_rows[0] %}
+          <div class="cx-confidence">{{ probability_rows[0].pct }}% confidence</div>
+        {% endif %}
+      </div>
+      {% if sentiment_label %}
+        <p class="cx-result-meta"><strong>Sentiment:</strong> {{ sentiment_label }} ({{ "%.2f"|format(sentiment_score) }})</p>
+      {% endif %}
+      {% if urgency_label %}
+        <p class="cx-result-meta"><strong>Urgency:</strong> {{ urgency_label }} ({{ urgency_score }} / 100)</p>
+      {% endif %}
+
+      {% if probability_rows %}
+        <h2 class="cx-h2">Probability breakdown</h2>
+        <div class="cx-prob-list">
+          {% for row in probability_rows %}
+            <div class="cx-prob-row">
+              <div class="cx-prob-head">
+                <span class="cx-prob-name">{{ row.label }}</span>
+                <span class="cx-prob-pct">{{ row.pct }}%</span>
+              </div>
+              <div class="cx-prob-bar-wrap"><div class="cx-prob-bar" style="width: {{ [row.pct, 100.0] | min }}%;"></div></div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% else %}
+      <p class="cx-muted">Run a scan to see ranked categories and confidence scores here.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if history_payload %}
+<script>
+(function () {
+  try {
+    var key = "cognisense_cx_scans";
+    var row = {{ history_payload | tojson }};
+    var list = JSON.parse(sessionStorage.getItem(key) || "[]");
+    if (!Array.isArray(list)) list = [];
+    list.unshift(row);
+    if (list.length > 50) list = list.slice(0, 50);
+    sessionStorage.setItem(key, JSON.stringify(list));
+  } catch (e) {}
+})();
+</script>
+{% endif %}
+<script>
+  (function () {
+    var form = document.getElementById("predict-form");
+    var button = document.getElementById("predict-button");
+    var narrativeInput = document.getElementById("narrative-input");
+    document.querySelectorAll(".cx-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        if (!narrativeInput) return;
+        narrativeInput.value = chip.getAttribute("data-example") || "";
+        narrativeInput.focus();
+      });
+    });
+    if (form && button) {
+      form.addEventListener("submit", function () {
+        button.disabled = true;
+        button.textContent = "Scanning…";
+      });
+    }
+  })();
+</script>
+{% endblock %}

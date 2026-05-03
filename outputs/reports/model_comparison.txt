@@ -1,0 +1,4 @@
+Model comparison results
+- LogisticRegression: accuracy=0.8949, weighted_f1=0.8991
+- NaiveBayes: accuracy=0.8541, weighted_f1=0.8334
+- Selected model: LogisticRegression

@@ -1,0 +1,11 @@
+                                                    precision    recall  f1-score   support
+
+                       Checking or savings account       0.78      0.90      0.83       188
+                                  Credit reporting       0.97      0.91      0.94      2678
+                                   Debt collection       0.63      0.79      0.70       427
+Money transfer, virtual currency, or money service       0.85      0.78      0.82       128
+                                          Mortgage       0.79      0.94      0.86       156
+
+                                          accuracy                           0.89      3577
+                                         macro avg       0.80      0.87      0.83      3577
+                                      weighted avg       0.91      0.89      0.90      3577

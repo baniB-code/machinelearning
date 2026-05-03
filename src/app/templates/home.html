@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Home - CogniSense CX{% endblock %}
+{% block content %}
+<div class="cx-grid-2">
+  <section class="cx-panel cx-panel-white">
+    <h1 class="cx-panel-title">About this system</h1>
+    <p class="cx-panel-lead">
+      CogniSense CX turns unstructured consumer complaint text into issue categories, sentiment, and urgency signals
+      so teams can triage and report faster—using a lightweight, interpretable ML stack suitable for demos and coursework.
+    </p>
+    <h2 class="cx-h2">How it works</h2>
+    <ol class="cx-steps">
+      <li>Open <strong>Scan</strong> and paste a complaint narrative (or use a quick example chip).</li>
+      <li>The classifier ranks <strong>issue categories</strong> with confidence scores; sentiment and urgency are derived from text cues.</li>
+      <li>Each run is stored in <strong>History</strong> in your browser for this session.</li>
+      <li>Use <strong>Encyclopedia</strong> for plain-language guidance on common complaint themes.</li>
+    </ol>
+  </section>
+  <section class="cx-panel cx-panel-white">
+    <h1 class="cx-panel-title">System metrics</h1>
+    <div class="cx-metrics">
+      <div class="cx-metric-card">
+        <div class="cx-metric-label">Total complaints</div>
+        <div class="cx-metric-value">{{ summary.total_rows }}</div>
+        <div class="cx-metric-hint">Rows in loaded dataset</div>
+      </div>
+      <div class="cx-metric-card">
+        <div class="cx-metric-label">Model accuracy</div>
+        <div class="cx-metric-value">{% if accuracy_pct is not none %}{{ accuracy_pct }}%{% else %}—{% endif %}</div>
+        <div class="cx-metric-hint">Selected model (validation)</div>
+      </div>
+      <div class="cx-metric-card">
+        <div class="cx-metric-label">Session scans</div>
+        <div class="cx-metric-value" id="cxSessionScans">0</div>
+        <div class="cx-metric-hint">Stored in this browser</div>
+      </div>
+      <div class="cx-metric-card">
+        <div class="cx-metric-label">Dataset size</div>
+        <div class="cx-metric-value">{{ summary.dataset_size_mb }} MB</div>
+        <div class="cx-metric-hint">CSV on disk</div>
+      </div>
+    </div>
+    {% if summary.dashboard_note %}
+      <p class="cx-note">{{ summary.dashboard_note }}</p>
+    {% endif %}
+    {% if summary.model_comparison_note %}
+      <p class="cx-note cx-note-subtle">{{ summary.model_comparison_note }}</p>
+    {% endif %}
+    <div class="cx-actions">
+      <a href="{{ url_for('predict') }}" class="cx-btn cx-btn-primary">Start scan</a>
+      <a href="{{ url_for('upload') }}" class="cx-btn cx-btn-ghost">Replace dataset</a>
+    </div>
+  </section>
+</div>
+
+<div class="cx-panel cx-panel-dark cx-panel-wide">
+  <h2 class="cx-h2">Top complaint issues</h2>
+  {% if summary.top_issues %}
+    <ul class="cx-top-list">
+      {% for issue, count in summary.top_issues %}
+        <li><span class="cx-issue">{{ issue }}</span> <span class="cx-count">{{ count }}</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="cx-muted">No issue distribution yet—upload a dataset with an Issue column or wait for counts.</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  (function () {
+    try {
+      var raw = sessionStorage.getItem("cognisense_cx_scans");
+      var list = raw ? JSON.parse(raw) : [];
+      var el = document.getElementById("cxSessionScans");
+      if (el) el.textContent = String(Array.isArray(list) ? list.length : 0);
+    } catch (e) {}
+  })();
+</script>
+{% endblock %}

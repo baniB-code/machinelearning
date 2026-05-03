@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics — CogniSense CX</title>
+  <meta name="description" content="Advanced analytics and insights for complaint intelligence. View trends, patterns, and AI-generated insights." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/app-layout.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .admin-full { grid-column: 1 / -1; }
+
+    @media (max-width: 900px) {
+      .admin-layout { grid-template-columns: 1fr; }
+      .admin-full { grid-column: 1; }
+    }
+
+    .chart-card { padding: 1.75rem; }
+    .chart-title {
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .chart-canvas-wrap { position: relative; height: 260px; }
+
+    /* ─── Insight Cards ──────────────────────────────── */
+    .insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    @media (max-width: 900px) { .insight-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .insight-grid { grid-template-columns: 1fr; } }
+
+    .insight-card {
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      transition: var(--transition);
+    }
+    .insight-card:hover { background: var(--bg-card-hover); }
+
+    .insight-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .insight-val   { font-size: 1.6rem; font-weight: 900; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .insight-sub   { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+    /* ─── AI Insights Panel ──────────────────────────── */
+    .insight-summary {
+      padding: 1.75rem;
+    }
+
+    .insight-bullet {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.875rem 0;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .insight-bullet:last-child { border-bottom: none; }
+    .insight-bullet .icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .insight-bullet .text { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+    .insight-bullet .text strong { color: var(--text-primary); }
+
+    /* ─── Category Breakdown Table ───────────────────── */
+    .cat-bar { height: 6px; border-radius: 999px; background: var(--gradient-primary); transition: width 0.8s ease; margin-top: 0.3rem; }
+
+    /* ─── Word Cloud Simulation ──────────────────────── */
+    .word-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 1rem 0;
+      align-items: center;
+    }
+
+    .wc-word {
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: default;
+      transition: var(--transition);
+      border: 1px solid var(--glass-border);
+    }
+    .wc-word:hover { transform: scale(1.05); }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="app-main">
+    <div class="container" style="padding-top:2.5rem; padding-bottom:4rem;">
+
+      <div style="margin-bottom:2rem; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+        <div>
+          <div class="section-tag" style="margin-bottom:0.5rem;">📈 Admin Portal</div>
+          <h1 style="font-size:1.8rem; font-weight:900;">Advanced Analytics</h1>
+          <p style="color:var(--text-secondary); font-size:0.9rem;">AI-generated insights and trends from complaint data.</p>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+          <button class="btn btn-outline btn-sm" id="refreshBtn">🔄 Refresh</button>
+          <a href="admin-complaints.html" class="btn btn-primary btn-sm">📋 View All Complaints</a>
+        </div>
+      </div>
+
+      <!-- ─── Quick Insights Strip ────────────────────── -->
+      <div class="insight-grid" id="insightGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="admin-layout">
+
+        <!-- ─── Trend Line (wider) ──────────────────── -->
+        <div class="card chart-card admin-full">
+          <div class="chart-title">📈 Complaints Over Time (14 Days)</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="adminTrendChart"></canvas>
+          </div>
+        </div>
+
+        <!-- ─── Sentiment Trend ──────────────────────── -->
+        <div class="card chart-card">
+          <div class="chart-title">💬 Sentiment Ratio</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="sentimentRadar"></canvas>
+          </div>
+        </div>
+
+        <!-- ─── Top Categories ───────────────────────── -->
+        <div class="card chart-card">
+          <div class="chart-title">🏆 Top Complaint Types</div>
+          <div id="topCategoriesList" style="padding-top:0.5rem;"></div>
+        </div>
+
+        <!-- ─── AI Insights ──────────────────────────── -->
+        <div class="card insight-summary admin-full">
+          <div class="chart-title">🤖 AI Insights Summary</div>
+          <div id="aiInsights"></div>
+        </div>
+
+        <!-- ─── Simulated Word Cloud ─────────────────── -->
+        <div class="card chart-card admin-full">
+          <div class="chart-title">🔤 Common Keywords (Word Cloud Simulation)</div>
+          <div class="word-cloud" id="wordCloud"></div>
+        </div>
+
+      </div>
+
+      </div>
+    </div>
+  </div><!-- .app-main -->
+</div><!-- .app-container -->
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script src="js/ml-engine.js"></script>
+  <script src="js/complaint-store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/layout.js"></script>
+  <script>
+    if (!requireAuth('admin')) throw new Error('Not authenticated');
+    Layout.render('admin.html');
+
+    const isDark = () => document.documentElement.getAttribute('data-theme') !== 'light';
+
+    function chartColors() {
+      return {
+        text: isDark() ? 'rgba(145,151,186,0.8)' : 'rgba(74,79,122,0.8)',
+        grid: isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(124,110,245,0.1)',
+      };
+    }
+
+    let adminTrend, sentRadar;
+
+    function buildInsightGrid(stats) {
+      const all = Store.getAll();
+      const total = stats.total;
+      const negRate = total ? Math.round((stats.sentimentCounts.Negative || 0) / total * 100) : 0;
+      const highRate = total ? Math.round((stats.priorityCounts.High || 0) / total * 100) : 0;
+      const resRate = total ? Math.round((stats.sentimentCounts.Positive || 0) / total * 100) : 0;
+
+      // Most common category
+      const topCat = Object.entries(stats.categoryCounts).sort((a,b)=>b[1]-a[1])[0];
+
+      // Avg priority score
+      const avgPri = all.length
+        ? Math.round(all.reduce((s,c) => s+(c.priority?.score||0),0) / all.length)
+        : 0;
+
+      document.getElementById('insightGrid').innerHTML = `
+        <div class="insight-card">
+          <div class="insight-label">Negativity Rate</div>
+          <div class="insight-val">${negRate}%</div>
+          <div class="insight-sub">of total complaints are negative</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">High Priority Rate</div>
+          <div class="insight-val">${highRate}%</div>
+          <div class="insight-sub">require urgent attention</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Resolution Sentiment</div>
+          <div class="insight-val">${resRate}%</div>
+          <div class="insight-sub">positive outcomes</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Top Category</div>
+          <div class="insight-val" style="font-size:1.2rem;">${topCat ? topCat[0] : '–'}</div>
+          <div class="insight-sub">${topCat ? topCat[1] + ' complaints' : 'No data yet'}</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Avg Priority Score</div>
+          <div class="insight-val">${avgPri}/100</div>
+          <div class="insight-sub">across all complaints</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Total Processed</div>
+          <div class="insight-val">${total}</div>
+          <div class="insight-sub">complaints analyzed</div>
+        </div>
+      `;
+    }
+
+    function buildTrendChart(stats) {
+      const cc = chartColors();
+      const trendEntries = Object.entries(stats.dailyTrend)
+        .filter(([k]) => k !== 'unknown')
+        .sort(([a],[b]) => a.localeCompare(b))
+        .slice(-14);
+
+      if (adminTrend) adminTrend.destroy();
+      adminTrend = new Chart(document.getElementById('adminTrendChart'), {
+        type: 'bar',
+        data: {
+          labels: trendEntries.map(([d]) => d.substring(5)),
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Complaints',
+              data: trendEntries.map(([,v]) => v),
+              backgroundColor: 'rgba(124,110,245,0.4)',
+              borderColor: '#7c6ef5',
+              borderWidth: 2,
+              borderRadius: 4,
+              order: 2,
+            },
+            {
+              type: 'line',
+              label: 'Trend',
+              data: trendEntries.map(([,v]) => v),
+              borderColor: '#4f9eff',
+              backgroundColor: 'transparent',
+              tension: 0.4,
+              pointBackgroundColor: '#4f9eff',
+              pointRadius: 4,
+              order: 1,
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { ticks: { color: cc.text, precision: 0 }, grid: { color: cc.grid }, beginAtZero: true },
+            x: { ticks: { color: cc.text }, grid: { color: cc.grid } }
+          },
+          plugins: { legend: { labels: { color: cc.text } } }
+        }
+      });
+    }
+
+    function buildSentimentRadar(stats) {
+      const cc = chartColors();
+      const total = stats.total || 1;
+
+      if (sentRadar) sentRadar.destroy();
+      sentRadar = new Chart(document.getElementById('sentimentRadar'), {
+        type: 'polarArea',
+        data: {
+          labels: ['Positive', 'Negative', 'Neutral', 'High Priority', 'Medium', 'Low'],
+          datasets: [{
+            data: [
+              stats.sentimentCounts.Positive  || 0,
+              stats.sentimentCounts.Negative  || 0,
+              stats.sentimentCounts.Neutral   || 0,
+              stats.priorityCounts.High       || 0,
+              stats.priorityCounts.Medium     || 0,
+              stats.priorityCounts.Low        || 0,
+            ],
+            backgroundColor: [
+              'rgba(16,217,138,0.6)', 'rgba(248,113,113,0.6)', 'rgba(145,151,186,0.6)',
+              'rgba(248,113,113,0.4)', 'rgba(251,191,36,0.4)', 'rgba(16,217,138,0.4)'
+            ],
+            borderColor: ['#10d98a','#f87171','#9197ba','#f87171','#fbbf24','#10d98a'],
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: cc.text, font: { size: 11 } } } },
+          scales: { r: { ticks: { display: false }, grid: { color: cc.grid } } }
+        }
+      });
+    }
+
+    function buildTopCategories(stats) {
+      const entries = Object.entries(stats.categoryCounts).sort((a,b)=>b[1]-a[1]).slice(0, 6);
+      const max = entries[0]?.[1] || 1;
+      const colors = ['#7c6ef5','#4f9eff','#10d98a','#fbbf24','#f87171','#00d4ff'];
+      const icons  = Object.fromEntries(
+        Object.entries(MLEngine.CATEGORIES).map(([k,v]) => [k, v.icon])
+      );
+
+      const el = document.getElementById('topCategoriesList');
+      if (!entries.length) {
+        el.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">No data yet. <a href="analyze.html" style="color:var(--accent-purple);">Add complaints →</a></div>';
+        return;
+      }
+
+      el.innerHTML = entries.map(([cat, count], i) => `
+        <div style="margin-bottom:0.875rem;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.25rem;">
+            <span>${icons[cat] || '💬'} ${cat}</span>
+            <span style="font-weight:700; color:var(--text-primary);">${count}</span>
+          </div>
+          <div style="background:var(--bg-tertiary); border-radius:999px; overflow:hidden; height:6px;">
+            <div class="cat-bar" style="width:${Math.round(count/max*100)}%; background:${colors[i] || '#7c6ef5'};"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function buildAiInsights(stats) {
+      const all = ComplaintStore.getAll();
+      const total = stats.total;
+      const el = document.getElementById('aiInsights');
+
+      if (!total) {
+        el.innerHTML = `
+          <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">📭</div>
+            <p>No complaints data yet.</p>
+            <a href="analyze.html" style="color:var(--accent-purple);">Analyze some complaints →</a>
+          </div>`;
+        return;
+      }
+
+      const negPct = Math.round((stats.sentimentCounts.Negative||0) / total * 100);
+      const highPct= Math.round((stats.priorityCounts.High||0) / total * 100);
+      const topCat = Object.entries(stats.categoryCounts).sort((a,b)=>b[1]-a[1])[0];
+      const posPct = Math.round((stats.sentimentCounts.Positive||0) / total * 100);
+      const recentHigh = ComplaintStore.getHighPriority(1)[0];
+
+      const insights = [
+        {
+          icon: negPct > 60 ? '⚠️' : negPct > 30 ? '🟡' : '✅',
+          text: `<strong>Sentiment Health:</strong> ${negPct}% of complaints carry negative sentiment. ${
+            negPct > 60 ? 'This is critically high — customer experience may be severely impacted.' :
+            negPct > 30 ? 'Moderate negativity detected. Review recurring themes for improvement.' :
+            'Healthy sentiment ratio. Most complaints are neutral or positive.'
+          }`
+        },
+        {
+          icon: '🔴',
+          text: `<strong>Priority Escalation:</strong> ${stats.priorityCounts.High||0} complaints (${highPct}%) are flagged High priority. ${
+            highPct > 40 ? 'Immediate attention required — a large portion of complaints are critical.' :
+            'Monitor these closely and ensure fast resolution to prevent churn.'
+          }`
+        },
+        topCat ? {
+          icon: '📊',
+          text: `<strong>Top Issue Category:</strong> "${topCat[0]}" accounts for ${topCat[1]} complaints (${Math.round(topCat[1]/total*100)}% of total). Focus root cause analysis here for maximum impact.`
+        } : null,
+        {
+          icon: '😊',
+          text: `<strong>Positive Signals:</strong> ${posPct}% of interactions are positive. ${
+            posPct > 40 ? 'Strong positive rapport — leverage this for testimonials and retention.' :
+            'Low positive rate. Consider proactive outreach programs to improve CX scores.'
+          }`
+        },
+        recentHigh ? {
+          icon: '🚨',
+          text: `<strong>Latest Critical Complaint:</strong> "${truncate(recentHigh.text, 120)}" — Classified as <strong>${recentHigh.classification.category}</strong>, submitted ${formatTimeAgo(recentHigh.timestamp)}.`
+        } : null,
+        {
+          icon: '💡',
+          text: `<strong>ML Recommendation:</strong> Based on current patterns, implementing automated response templates for "${topCat?.[0] || 'common'}" complaints could reduce resolution time by an estimated 40-60%.`
+        },
+      ].filter(Boolean);
+
+      el.innerHTML = insights.map(i => `
+        <div class="insight-bullet">
+          <div class="icon">${i.icon}</div>
+          <div class="text">${i.text}</div>
+        </div>
+      `).join('');
+    }
+
+    function buildWordCloud() {
+      const all = ComplaintStore.getAll();
+      const freqMap = {};
+      const stopWords = new Set(['the','and','for','that','this','was','are','with','from','have','has','been','not','can','its','your','my','they','but','our','will','you','get','got','had','did','just','very','really','so','it','is','in','on','to','of','i','a','an','be','or','we','at','by','if','me','he','she','their','also','more','all','do','no','now','any','out','up','what','when','how','who','why']);
+
+      all.forEach(c => {
+        const tokens = c.text.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+        tokens.forEach(t => {
+          if (!stopWords.has(t)) freqMap[t] = (freqMap[t] || 0) + 1;
+        });
+      });
+
+      const sorted = Object.entries(freqMap).sort((a,b)=>b[1]-a[1]).slice(0, 40);
+      const max = sorted[0]?.[1] || 1;
+
+      const colors = ['#7c6ef5','#4f9eff','#10d98a','#fbbf24','#f87171','#00d4ff','#a78bfa','#f06090'];
+      const el = document.getElementById('wordCloud');
+
+      if (!sorted.length) {
+        el.innerHTML = '<span style="color:var(--text-muted); font-size:0.85rem;">No data yet — analyze complaints to populate the word cloud.</span>';
+        return;
+      }
+
+      el.innerHTML = sorted.map(([word, count]) => {
+        const size = 0.75 + (count / max) * 1.5;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        return `<span class="wc-word" style="font-size:${size}rem; color:${color}; background:${color}15; border-color:${color}40;" title="${count} occurrence${count>1?'s':''}">${word}</span>`;
+      }).join('');
+    }
+
+    function refreshAdmin() {
+      const stats = ComplaintStore.getStats();
+      buildInsightGrid(stats);
+      buildTrendChart(stats);
+      buildSentimentRadar(stats);
+      buildTopCategories(stats);
+      buildAiInsights(stats);
+      buildWordCloud();
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', refreshAdmin);
+
+    // Re-render on theme change
+    const observer = new MutationObserver(() => {
+      const stats = ComplaintStore.getStats();
+      buildTrendChart(stats);
+      buildSentimentRadar(stats);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    refreshAdmin();
+  </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Submit Complaint — CogniSense CX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/app-layout.css" />
+  <style>
+    .submit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+    @media(max-width:820px){ .submit-grid { grid-template-columns: 1fr; } }
+    .result-reveal { animation: fadeUp 0.4s ease; }
+    .ml-badge { display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 1rem; border-radius:999px; font-size:0.82rem; font-weight:700; }
+    .ml-result-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem; }
+    .ml-card { padding:1rem; background:var(--bg-tertiary); border-radius:var(--radius); border:1px solid var(--glass-border); text-align:center; }
+    .ml-card .mc-icon { font-size:1.75rem; margin-bottom:0.35rem; }
+    .ml-card .mc-label { font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; }
+    .ml-card .mc-val   { font-size:1rem; font-weight:800; margin-top:0.2rem; }
+    .word-count-bar { font-size:0.74rem; color:var(--text-muted); margin-top:0.35rem; }
+    .live-preview-bar { margin-top:0.75rem; padding:0.6rem 0.9rem; background:var(--bg-tertiary); border-radius:var(--radius); font-size:0.82rem; border:1px solid var(--glass-border); display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center; min-height:38px; }
+    .textarea-wrap { position:relative; }
+    .wc-float { position:absolute; bottom:0.5rem; right:0.75rem; font-size:0.72rem; color:var(--text-muted); pointer-events:none; }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="app-main">
+    <div class="page-topbar">
+      <div>
+        <div class="section-tag">📝 Client Portal</div>
+        <h1 style="font-size:1.6rem;font-weight:900;margin-top:0.25rem;">Submit a Complaint</h1>
+        <p style="color:var(--text-secondary);font-size:0.88rem;">Describe your issue and our AI will analyze it instantly.</p>
+      </div>
+      <a href="client-complaints.html" class="btn btn-outline btn-sm">← My Complaints</a>
+    </div>
+
+    <div class="submit-grid">
+      <!-- Form -->
+      <div class="card" style="padding:2rem;">
+        <form id="complaintForm" novalidate>
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" for="title">Complaint Title <span style="color:#f87171;">*</span></label>
+            <input id="title" type="text" class="form-control" placeholder="e.g. Double billing on my order" required style="margin-top:0.35rem;" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="desc">Description <span style="color:#f87171;">*</span></label>
+            <div class="textarea-wrap">
+              <textarea id="desc" class="form-control" rows="7" placeholder="Describe your issue in detail…" required style="padding-bottom:2rem;margin-top:0.35rem;"></textarea>
+              <div class="wc-float" id="wcFloat">0 words</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:0.75rem;margin-top:1.25rem;flex-wrap:wrap;">
+            <button type="submit" class="btn btn-primary" id="submitBtn">Submit Complaint</button>
+            <button type="button" class="btn btn-outline btn-sm" id="demoBtn">Try Demo Text</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Result panel -->
+      <div id="resultPanel">
+        <div class="card" style="padding:2rem;text-align:center;color:var(--text-muted);" id="placeholder">
+          <div style="font-size:2.5rem;margin-bottom:0.75rem;opacity:0.4;">📝</div>
+          <p style="font-size:0.9rem;">Fill out the form to submit your ticket.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/app.js"></script>
+<script src="js/ml-engine.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/complaint-store.js"></script>
+<script>
+  if (!requireAuth('client')) throw new Error('Not authenticated');
+  const session = Auth.getSession();
+  Layout.render('client-submit.html');
+
+  const DEMOS = [
+    "I was charged twice for the same order #5521 and have not received a refund after 10 days of emailing support. This is completely unacceptable!",
+    "The product I received was broken on arrival. The packaging was damaged and the screen was cracked. I need a replacement or refund immediately.",
+    "I cannot log into my account for three days despite resetting my password multiple times. I keep getting a server error on your site.",
+    "My delivery was supposed to arrive last Monday and has been delayed with zero tracking updates. I urgently need this item for a work event this weekend.",
+    "Your support team was incredibly helpful and resolved my issue within minutes. Excellent and professional service — thank you!",
+  ];
+
+  const descEl   = document.getElementById('desc');
+  const wcEl     = document.getElementById('wcFloat');
+
+  descEl.addEventListener('input', () => {
+    const words = descEl.value.trim().split(/\s+/).filter(Boolean);
+    wcEl.textContent = `${words.length} word${words.length !== 1 ? 's' : ''}`;
+  });
+
+  document.getElementById('demoBtn').addEventListener('click', () => {
+    descEl.value = DEMOS[Math.floor(Math.random() * DEMOS.length)];
+    descEl.dispatchEvent(new Event('input'));
+    if (!document.getElementById('title').value) {
+      document.getElementById('title').value = 'Complaint regarding recent experience';
+    }
+  });
+
+  document.getElementById('complaintForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = document.getElementById('title').value.trim();
+    const desc  = descEl.value.trim();
+    if (!title) { showToast('Please enter a complaint title.', 'error'); return; }
+    if (!desc || desc.length < 10) { showToast('Please describe your complaint (min 10 characters).', 'error'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Submitting…'; btn.disabled = true;
+
+    setTimeout(() => {
+      const complaint = {
+        title,
+        description: desc,
+        text: desc,
+        userId:   session.id,
+        userName: session.name,
+        clientName: session.name,
+        status: 'Pending Analysis'
+      };
+      const saved = ComplaintStore.add(complaint);
+      // Add initial message = the complaint text
+      ComplaintStore.addMessage(saved.id, { senderId: session.id, senderName: session.name, senderRole: 'client', text: desc });
+
+      showResult(saved);
+      btn.textContent = 'Submit Complaint'; btn.disabled = false;
+      showToast('Complaint submitted successfully!', 'success');
+      document.getElementById('complaintForm').reset();
+      wcEl.textContent = '0 words';
+    }, 900);
+  });
+
+  function showResult(complaint) {
+    document.getElementById('resultPanel').innerHTML = `
+      <div class="card result-reveal" style="padding:2rem;">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--glass-border);">
+          <span style="font-size:1.4rem;">✅</span>
+          <div>
+            <div style="font-size:1rem;font-weight:800;">Ticket Submitted Successfully</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">Submitted ${new Date().toLocaleString()}</div>
+          </div>
+        </div>
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1.5rem;line-height:1.6;">
+          Thank you for reaching out. Your complaint has been recorded and will be reviewed by our administration team. You can communicate with an admin directly using the chat below.
+        </p>
+        <a href="client-chat.html?id=${complaint.id}" class="btn btn-primary" style="width:100%;text-align:center;display:block;">💬 Open Chat with Admin →</a>
+      </div>
+    `;
+  }
+
+  function showToast(msg, type='info') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    const colors = { success:'#10d98a', error:'#f87171', info:'#4f9eff' };
+    t.style.cssText = `background:var(--bg-secondary);border:1px solid ${colors[type]||'var(--glass-border)'};color:var(--text-primary);padding:0.75rem 1.25rem;border-radius:var(--radius);margin-top:0.5rem;font-size:0.85rem;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:fadeIn 0.3s ease;`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+</script>
+</body>
+</html>

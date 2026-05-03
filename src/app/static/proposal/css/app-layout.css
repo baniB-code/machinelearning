@@ -1,0 +1,187 @@
+/* ─── App Layout (Sidebar + Main) ─────────────────────────────────────────── */
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 200;
+  transition: transform 0.3s ease;
+}
+
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 99px; }
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1.35rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+.sb-logo { width: 38px; height: 38px; border-radius: 10px; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.sb-name { font-size: 0.9rem; font-weight: 900; }
+.sb-tag  { font-size: 0.65rem; color: var(--text-muted); }
+
+.sb-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+.sb-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#10d98a,#4f9eff); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.9rem; flex-shrink: 0; }
+.sb-user-name { font-size: 0.82rem; font-weight: 700; }
+.sb-role-badge { font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; margin-top: 0.2rem; display: inline-block; }
+
+.sb-nav { padding: 0.65rem 0.65rem; flex: 1; }
+.sb-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: var(--transition);
+  margin-bottom: 0.2rem;
+}
+.sb-link:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+.sb-link.active { background: rgba(124,110,245,0.15); color: var(--accent-purple); }
+.sb-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+/* ─── Main content area ──────────────────────────────────────────────────── */
+.app-main {
+  margin-left: 240px;
+  flex: 1;
+  padding: 2rem 2.5rem;
+  min-height: 100vh;
+  max-width: 1280px;
+}
+
+/* ─── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .app-main { margin-left: 0; padding: 1.25rem 1rem; }
+  .sidebar-toggle { display: flex; }
+  .sidebar-overlay.open { display: block; }
+}
+
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 1rem; left: 1rem;
+  z-index: 201;
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  width: 40px; height: 40px;
+  border-radius: var(--radius);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 199;
+}
+
+/* ─── Page topbar ─────────────────────────────────────────────────────────── */
+.page-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.75rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Stats / cards ───────────────────────────────────────────────────────── */
+.stat-mini-card {
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  transition: var(--transition);
+}
+.stat-mini-card:hover { background: var(--bg-card-hover); }
+.smc-icon  { font-size: 1.2rem; margin-bottom: 0.3rem; }
+.smc-val   { font-size: 1.5rem; font-weight: 900; }
+.smc-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.15rem; }
+
+/* ─── Complaint cards ─────────────────────────────────────────────────────── */
+.complaint-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-card);
+  transition: var(--transition);
+  margin-bottom: 0.85rem;
+}
+.complaint-card:hover { background: var(--bg-card-hover); border-color: rgba(124,110,245,0.3); }
+.cc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.4rem; }
+.cc-title  { font-size: 0.95rem; font-weight: 800; }
+.cc-desc   { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 0.65rem; }
+.cc-meta   { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.cc-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+
+/* ─── Filter pills ────────────────────────────────────────────────────────── */
+.filter-pill {
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.filter-pill:hover, .filter-pill.active {
+  background: var(--accent-purple);
+  color: #fff;
+  border-color: var(--accent-purple);
+}
+
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+.empty-state .e-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.empty-state p { font-size: 0.9rem; }
+
+/* ─── Misc ─────────────────────────────────────────────────────────────── */
+.msg-count { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: #fff; color: var(--accent-purple); font-size: 0.65rem; font-weight: 900; border-radius: 50%; margin-left: 0.25rem; }
+
+/* ─── Admin table tweaks ──────────────────────────────────────────────────── */
+.tbl-actions { display: flex; gap: 0.4rem; }
+.status-select-inline {
+  padding: 0.3rem 0.6rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}

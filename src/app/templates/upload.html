@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Dataset - CogniSense CX{% endblock %}
+{% block content %}
+<div class="cx-panel cx-panel-white" style="max-width: 640px;">
+  <h1 class="cx-panel-title">Upload dataset (CSV)</h1>
+  <p class="cx-panel-lead">Replace the working complaints file (for example CFPB <code>complaints.csv</code>) used by the dashboard and training scripts.</p>
+  <form method="post" enctype="multipart/form-data" class="cx-form">
+    <label for="csv_file">CSV file</label>
+    <input id="csv_file" type="file" name="csv_file" accept=".csv" required class="cx-file-input">
+    <button type="submit" class="cx-btn cx-btn-primary">Upload</button>
+  </form>
+</div>
+{% endblock %}

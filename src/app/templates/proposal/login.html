@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — CogniSense CX</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+    .auth-card { width: 100%; max-width: 420px; padding: 2.5rem; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); background: var(--bg-card); backdrop-filter: var(--glass-blur); }
+    .auth-logo { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
+    .auth-logo .logo-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+    .auth-title { font-size: 1.5rem; font-weight: 900; margin-bottom: 0.25rem; }
+    .auth-sub   { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.75rem; }
+    .auth-form .form-group { margin-bottom: 1.1rem; }
+    .auth-form label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.4rem; }
+    .auth-form input { width: 100%; padding: 0.7rem 1rem; border-radius: var(--radius); border: 1px solid var(--glass-border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 0.9rem; outline: none; transition: var(--transition); box-sizing: border-box; font-family: inherit; }
+    .auth-form input:focus { border-color: var(--accent-purple); }
+    .auth-form input::placeholder { color: var(--text-muted); }
+    .password-wrap { position: relative; }
+    .password-toggle { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); width: auto; border: 1px solid var(--glass-border); background: var(--bg-card); color: var(--text-secondary); border-radius: var(--radius); padding: 0.3rem 0.5rem; font-size: 0.72rem; cursor: pointer; }
+    .password-toggle:focus-visible { outline: 2px solid var(--accent-purple); }
+    .field-error { color: #fda4af; font-size: 0.77rem; margin-top: 0.35rem; min-height: 1em; }
+    .field-inline-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; gap: 0.75rem; }
+    .checkbox-wrap { display: flex; align-items: center; gap: 0.45rem; color: var(--text-secondary); font-size: 0.82rem; }
+    .checkbox-wrap input { width: auto; margin: 0; accent-color: var(--accent-purple); }
+    .muted-link { color: var(--accent-purple); text-decoration: none; font-size: 0.82rem; font-weight: 600; }
+    .auth-btn { width: 100%; padding: 0.8rem; margin-top: 0.5rem; border-radius: var(--radius); background: var(--gradient-primary); color: #fff; font-size: 0.95rem; font-weight: 700; border: none; cursor: pointer; transition: var(--transition); }
+    .auth-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .auth-btn:active { transform: translateY(0); }
+    .auth-btn:disabled { opacity: 0.75; cursor: not-allowed; transform: none; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; margin-right: 0.4rem; vertical-align: text-bottom; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .auth-footer { margin-top: 1.5rem; text-align: center; font-size: 0.83rem; color: var(--text-muted); }
+    .auth-footer a { color: var(--accent-purple); text-decoration: none; font-weight: 600; }
+    .error-msg { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: #f87171; padding: 0.7rem 1rem; border-radius: var(--radius); font-size: 0.83rem; margin-bottom: 1rem; display: none; }
+    .demo-accounts { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--glass-border); }
+    .demo-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.65rem; }
+    .demo-btn { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.55rem 0.85rem; background: var(--bg-tertiary); border: 1px solid var(--glass-border); border-radius: var(--radius); cursor: pointer; color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 0.4rem; transition: var(--transition); text-align: left; }
+    .demo-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+    .demo-btn strong { color: var(--text-primary); }
+    .back-link { position: absolute; top: 2rem; left: 2rem; color: var(--text-primary); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: var(--transition); display: flex; align-items: center; gap: 0.5rem; background: var(--bg-tertiary); padding: 0.6rem 1rem; border-radius: var(--radius); border: 1px solid var(--glass-border); }
+    .back-link:hover { background: var(--bg-card-hover); border-color: var(--accent-purple); transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">← Back to Home</a>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <div style="font-weight:900; font-size:1.1rem;">CogniSense CX</div>
+        <div style="font-size:0.72rem; color:var(--text-muted);">AI Complaint Intelligence</div>
+      </div>
+    </div>
+
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">Sign in to continue to your dashboard.</div>
+
+    <div class="error-msg" id="errorMsg" role="alert" aria-live="polite"></div>
+
+    <form class="auth-form" id="loginForm" novalidate>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" aria-describedby="emailError" />
+        <div id="emailError" class="field-error" aria-live="polite"></div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" aria-describedby="passwordError" />
+          <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password">Show</button>
+        </div>
+        <div id="passwordError" class="field-error" aria-live="polite"></div>
+      </div>
+      <div class="field-inline-row">
+        <label class="checkbox-wrap" for="rememberMe">
+          <input type="checkbox" id="rememberMe" />
+          Remember me
+        </label>
+        <a href="#" class="muted-link">Forgot password?</a>
+      </div>
+      <button type="submit" class="auth-btn" id="loginBtn">Sign In →</button>
+    </form>
+
+    <div class="demo-accounts">
+      <div class="demo-label">🚀 Quick Demo Login</div>
+      <button class="demo-btn" onclick="fillDemo('admin@cognisense.com','admin123')">🛡️ <span><strong>Admin</strong> — admin@cognisense.com / admin123</span></button>
+      <button class="demo-btn" onclick="fillDemo('jane@demo.com','client123')">👤 <span><strong>Client</strong> — jane@demo.com / client123</span></button>
+    </div>
+
+    <div class="auth-footer">Don't have an account? <a href="register.html">Register here</a></div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Redirect if already logged in
+    const sess = Auth.getSession();
+    if (sess) window.location.href = sess.role === 'admin' ? 'admin-dashboard.html' : 'client-complaints.html';
+
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+    const emailErrorEl = document.getElementById('emailError');
+    const passwordErrorEl = document.getElementById('passwordError');
+    const globalErrorEl = document.getElementById('errorMsg');
+    const passwordToggleEl = document.getElementById('passwordToggle');
+    const loginBtn = document.getElementById('loginBtn');
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function clearFieldErrors() {
+      emailErrorEl.textContent = '';
+      passwordErrorEl.textContent = '';
+      globalErrorEl.style.display = 'none';
+    }
+
+    function fillDemo(email, pw) {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = pw;
+      document.getElementById('email').focus();
+      clearFieldErrors();
+    }
+
+    passwordToggleEl.addEventListener('click', () => {
+      const isHidden = passwordEl.type === 'password';
+      passwordEl.type = isHidden ? 'text' : 'password';
+      passwordToggleEl.textContent = isHidden ? 'Hide' : 'Show';
+      passwordToggleEl.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+      clearFieldErrors();
+
+      let hasErrors = false;
+      if (!email) {
+        emailErrorEl.textContent = 'Email is required.';
+        hasErrors = true;
+      } else if (!isValidEmail(email)) {
+        emailErrorEl.textContent = 'Please enter a valid email address.';
+        hasErrors = true;
+      }
+      if (!password) {
+        passwordErrorEl.textContent = 'Password is required.';
+        hasErrors = true;
+      }
+      if (hasErrors) return;
+
+      loginBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Signing in...';
+      loginBtn.disabled = true;
+
+      setTimeout(() => {
+        const result = Auth.login({ email, password });
+        if (!result.ok) {
+          globalErrorEl.textContent = result.error || 'Invalid email or password.';
+          globalErrorEl.style.display = 'block';
+          loginBtn.textContent = 'Sign In →';
+          loginBtn.disabled = false;
+          return;
+        }
+        window.location.href = result.user.role === 'admin' ? 'admin-dashboard.html' : 'client-complaints.html';
+      }, 400);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Large / downloadable data (see README for CFPB source)
+dataset/*.csv
+dataset/*.csv.zip
+!dataset/.gitkeep
+
+# Local DB and Cursor assets (optional)
+data/portal.db
+assets/
+
+# OS / editor
+Thumbs.db
+.DS_Store
